@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
 import { signOut } from 'next-auth/react';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { RootState } from '@/stores/store';
 import AuthSession from '@/app/_component/AuthSession';
 
 type ClientLayoutProps = {
