@@ -1,13 +1,11 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { signOut } from 'next-auth/react';
 
-const MainPage = () => {
-  const { data: session, status } = useSession();
-
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
+export default function MainPage() {
+  const session = useSelector((state: RootState) => state.session.user);
 
   if (!session) {
     return <div>Please sign in</div>;
@@ -15,10 +13,9 @@ const MainPage = () => {
 
   return (
     <div>
-      <h1>Welcome, {session.user?.email}</h1>
+      <h1>Welcome, {session.email}</h1>
+      <p>Your name: {session.name}</p>
       <button onClick={() => signOut()}>Sign Out</button>
     </div>
   );
-};
-
-export default MainPage;
+}
