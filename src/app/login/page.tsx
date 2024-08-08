@@ -36,7 +36,7 @@ const SignIn = () => {
         <button type="submit" className="mt-4 px-4 py-2 bg-secondary text-white rounded hover:bg-secondaryHover transition">
           Sign In
         </button>
-        <button type="button" onClick={() => signIn('google')} className="mt-2 px-4 py-2 font-hangang bg-secondary text-white rounded hover:bg-secondaryHover transition">
+        <button type="button" onClick={() => signIn('google')} className="mt-2 px-4 py-2 font-delius bg-secondary text-white rounded hover:bg-secondaryHover transition">
           Sign In with Google
         </button>
         <button type="button" onClick={() => signIn('kakao')} className="mt-2 px-4 py-2 bg-secondary text-white rounded hover:bg-secondaryHover transition">

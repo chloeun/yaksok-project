@@ -17,10 +17,10 @@ const LandingPage = () => {
           />
         </div>
         <div className="text-center mt-8 p-2 md:p-4 leading-tight">
-          <h1 className="text-[18px] md:text-[30px] font-bold text-textMain font-deliusUnicaseRegular tracking-[0.35em] mb-4 md:mb-6">Welcome To</h1>
-          <h1 className="text-[30px] md:text-[50px] font-extrabold text-textButton font-deliusUnicaseRegular tracking-[0.35em]">YAKSOK</h1>
+          <h1 className="text-[18px] md:text-[30px] font-bold text-textMain font-deliusRegular tracking-[0.35em] mb-4 md:mb-6">Welcome To</h1>
+          <h1 className="text-[30px] md:text-[50px] font-extrabold text-textButton font-deliusRegular tracking-[0.35em]">YAKSOK</h1>
         </div>
-        <p className="text-gray-600 mt-2 md:mt-4 p-2 md:p-4 text-[16px] md:text-xl font-pretendardVariable text-center tracking-[0.32em]">Make fun plans!</p>
+        <p className="text-gray-600 mt-2 md:mt-4 p-2 md:p-4 text-[16px] md:text-xl font-pretendard text-center tracking-[0.32em]">Make fun plans!</p>
         <Link href="/register">
           <div className="mt-14 px-10 md:px-10 py-3  md:py-3 text-[16px] md:text-[28px] bg-buttonA font-bold text-textButton rounded-lg shadow-lg hover:bg-secondaryHover transition text-center tracking-[0.30em]">
             시작하기
