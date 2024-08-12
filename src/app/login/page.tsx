@@ -1,5 +1,3 @@
-// File path: /app/login/page.tsx
-
 'use client';
 
 import { signIn } from 'next-auth/react';
@@ -35,7 +33,11 @@ const SignIn = () => {
         </div>
         <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-5 pt-10 pb-12 rounded-2xl shadow-md md:max-w-2xl mt-4 md:p-10">
           <div className="flex flex-col items-center mb-6">
-            <button onClick={() => signIn('kakao')} className="bg-[#ffe403] hover:bg-yellow-500 tracking-[0.10em] w-full text-lg text-textButton font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center transition">
+            <button
+              type="button"  // 카카오 로그인 버튼의 타입을 "button"으로 설정
+              onClick={() => signIn('kakao')}
+              className="bg-[#ffe403] hover:bg-yellow-500 tracking-[0.10em] w-full text-lg text-textButton font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center transition"
+            >
               <RiKakaoTalkFill className="mr-4" size={24} /> 카카오 로그인
             </button>
           </div>
@@ -66,8 +68,8 @@ const SignIn = () => {
           </div>
           <div className="flex items-center justify-center mt-10 ">
             <button
+              type="submit"  // 로그인 버튼의 타입을 "submit"으로 설정
               className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"
-              type="submit"
             >
               로그인
             </button>

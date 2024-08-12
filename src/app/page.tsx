@@ -9,7 +9,7 @@ const LandingPage = () => {
         <div className="flex w-[190px] h-[270px] md:w-[190px] md:h-[270px] my-5 md:my-10">
           <Image
             src={YaksokLogo}
-            alt="Yaksok Logo"
+            alt="Yaksok Logo" 
             layout="responsive"
             width={200}
             height={250}

@@ -29,7 +29,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="w-full md:bg-white shadow-md p-4 flex justify-between items-center fixed top-10 md:top-0 z-10">
+    <nav className="w-full md:bg-white shadow-md p-4 flex justify-between items-center fixed top-10 md:top-0 z-100">
       <div className="flex items-center">
         <h1 className="text-md font-bold text-gray-600 font-deliusRegular tracking-[0.35em]">YAKSOK</h1>
       </div>
