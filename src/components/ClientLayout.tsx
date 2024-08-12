@@ -23,7 +23,7 @@ export default function ClientLayout({ children, session }: ClientLayoutProps) {
         <header>
           {clientSession && (
             <nav>
-              <span>Welcome, {clientSession.email}</span>
+              <span>Welcome, {clientSession.username}</span>
               <button onClick={() => signOut()}>Sign Out</button>
             </nav>
           )}

@@ -30,6 +30,8 @@ const pretendardVariable = localFont({
   variable: '--font-pretendardVariable',
 });
 
+
+
 type RootLayoutProps = {
   children: ReactNode;
 };
