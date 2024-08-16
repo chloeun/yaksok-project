@@ -13,9 +13,11 @@ import { GoClock } from "react-icons/go";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import ReminderBox from './_component/ReminderBox';
 import InvitationBox from './_component/InvitationBox';
+import { useRouter } from 'next/navigation';  // Import the useRouter hook
 
 const MainPage = () => {
   const { data: session, status } = useSession();
+  const router = useRouter();  // Initialize the router
 
   useEffect(() => {
     console.log("Session data:", session);
@@ -28,6 +30,10 @@ const MainPage = () => {
   if (!session) {
     return <div>Please sign in</div>;
   }
+
+  const handleCreateSchedule = () => {
+    router.push('/create-schedule');  // Navigate to the create-schedule page
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
@@ -56,11 +62,13 @@ const MainPage = () => {
         <InvitationBox />
 
         {/* Reminder Box Section */}
-        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4">
+        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
           다가오는 약속:
         </h2>
         <ReminderBox />
-        <button className="bg-buttonA hover:bg-secondaryHover min-w-[320px] tracking-[0.30em] w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[8px] md:py-[12px] lg:py-[14px] px-14 md:px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis">
+        <button 
+          onClick={handleCreateSchedule}  // Add the onClick event handler
+          className="bg-buttonA hover:bg-secondaryHover min-w-[320px] tracking-[0.30em] mt-3 w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[8px] md:py-[12px] lg:py-[14px] px-14 md:px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis">
           <IoIosAddCircleOutline className="mr-2 text-xl md:text-3xl lg:text-4xl" /> {/* Icon added here */}
           약속 만들기
         </button>
