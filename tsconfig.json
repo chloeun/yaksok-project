@@ -37,7 +37,8 @@
     "**/*.js",
     "src/**/*",
     "src/types/next-auth.d.ts",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "types/naver-maps.d.ts"
   ],
   "exclude": [
     "node_modules"

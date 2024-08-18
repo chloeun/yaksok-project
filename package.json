@@ -11,6 +11,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
     "@supabase/supabase-js": "^2.45.0",
+    "@types/navermaps": "^3.7.5",
     "axios": "^1.7.4",
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.6.0",
