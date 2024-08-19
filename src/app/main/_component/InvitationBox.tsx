@@ -7,7 +7,7 @@ interface Schedule {
   users: Array<{ name: string }>;
 }
 
-const InvitationBox = ({ schedule }: any) => { //타입 any 가 되어있어! PROBLEM HERE!!
+const InvitationBox = ({ schedule, onAccept }: any) => { //타입 any 가 되어있어! PROBLEM HERE!!
   console.log('Received schedule data:', schedule);
 
   if (!schedule) {
@@ -47,7 +47,10 @@ const InvitationBox = ({ schedule }: any) => { //타입 any 가 되어있어! PR
         </div>
       </div>
       <div className="flex flex-col items-center ml-4 space-y-3">
-        <button className="px-2 py-1 rounded-lg bg-[#eafcff] text-[#4D4C51] text-[10px] md:text-[12px] lg:text-[14px] font-semibold hover:bg-[#b5e7f5] tracking-[0.20em] shadow-md">
+        <button 
+          className="px-2 py-1 rounded-lg bg-[#eafcff] text-[#4D4C51] text-[10px] md:text-[12px] lg:text-[14px] font-semibold hover:bg-[#b5e7f5] tracking-[0.20em] shadow-md"
+          onClick={onAccept} // Call the onAccept function when the "수락" button is clicked
+          >
           수락
         </button>
         <button className="px-2 py-1 rounded-lg bg-[#FFE6E0] text-[#4D4C51] text-[10px] md:text-[12px] lg:text-[14px] font-semibold hover:bg-[#f4c8bd] tracking-[0.20em] shadow-md">

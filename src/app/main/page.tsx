@@ -93,6 +93,10 @@ const MainPage = () => {
     router.push('/create-schedule');
   };
 
+  const handleAcceptInvitation = (scheduleId: string) => {
+    router.push(`/invited-schedule/${scheduleId}`);
+  };
+  
   return (
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
       <Navbar />
@@ -124,6 +128,7 @@ const MainPage = () => {
                 <div key={invitation.id} className="mb-4"> {/* Add margin-bottom to create space */}
                   <InvitationBox 
                     schedule={invitation.schedules as any} // Pass the object directly
+                    onAccept={() => handleAcceptInvitation(invitation.schedule_id)} // Pass the onAccept function
                   />
                 </div>
               );

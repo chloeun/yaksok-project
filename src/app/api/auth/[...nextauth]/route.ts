@@ -37,7 +37,7 @@ export const authOptions: AuthOptions = {
 
         const { id, password } = credentials;
         
-        // Supabase에서 사용자 가져오기
+        // Fetch the user from the Supabase users table
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -50,7 +50,7 @@ export const authOptions: AuthOptions = {
 
         const user = data;
 
-        // 비밀번호 검증 (보안상 해시 암호화를 고려)
+        // Validate password (consider using a secure hashing mechanism in production)
         const isValidPassword = password === user.password;
         if (!isValidPassword) {
           return null;
@@ -76,8 +76,8 @@ export const authOptions: AuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7일간 세션 지속
-    updateAge: 24 * 60 * 60,  // 24시간마다 세션 갱신
+    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds, extend session duration
+    updateAge: 24 * 60 * 60,  // Extend session every 24 hours on active use
   },
   callbacks: {
     async jwt({ token, user }: { token: CustomToken; user?: any }): Promise<CustomToken> {
@@ -91,7 +91,7 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.username = token.username as string;
-        store.dispatch(setSession(session.user)); // Redux에 세션 저장
+        store.dispatch(setSession(session.user));
       }
       return session;
     },

@@ -112,7 +112,7 @@ const CreateSchedulePage = () => {
               className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"
               type="submit"
             >
-              완료
+              완료 
             </button>
           </div>
         </form>
