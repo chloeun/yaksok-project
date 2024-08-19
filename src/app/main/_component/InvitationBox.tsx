@@ -1,6 +1,23 @@
-'use client';
+interface Schedule {
+  plan_name: string;
+  month: string;
+  dates: string[];
+  locations: Array<{ title: string; roadAddress: string }>;
+  created_by: string;
+  users: Array<{ name: string }>;
+}
 
-const InvitationBox = () => {
+const InvitationBox = ({ schedule }: any) => { //타입 any 가 되어있어! PROBLEM HERE!!
+  console.log('Received schedule data:', schedule);
+
+  if (!schedule) {
+    return <p>Schedule data is missing</p>;
+  }
+
+  const inviterName = Array.isArray(schedule.users)
+    ? schedule.users[0]?.name || "알 수 없음"
+    : schedule?.users?.name || "알 수 없음";
+
   return (
     <div className="w-full min-w-[320px] bg-white px-2 py-4 md:px-4 lg:px-6 rounded-2xl shadow-md border border-gray-300 flex items-center justify-between">
       <div className="flex items-center flex-grow">
@@ -8,7 +25,7 @@ const InvitationBox = () => {
           <p className="text-[12px] md:text-[14px] lg:text-[16px] font-pretendard text-textMain">초대한 사람</p>
           <div className="flex items-center justify-center">
             <p className="font-gangwonEdu text-[20px] md:text-[22px] lg:text-[24px] mt-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-[80px] md:max-w-[100px] lg:max-w-[120px]">
-              나윤
+              {inviterName}
             </p>
           </div>
         </div>
@@ -16,7 +33,7 @@ const InvitationBox = () => {
           <p className="text-[12px] md:text-[14px] lg:text-[16px] font-pretendard text-textMain">약속 이름</p>
           <div className="flex items-center justify-center">
             <p className="font-gangwonEdu text-[20px] md:text-[22px] lg:text-[24px] mt-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-[100px] md:max-w-[120px] lg:max-w-[140px]">
-              외대모임 🎀
+              {schedule.plan_name}
             </p>
           </div>
         </div>
@@ -24,7 +41,7 @@ const InvitationBox = () => {
           <p className="text-[12px] md:text-[14px] lg:text-[16px] font-pretendard text-textMain">약속 기간</p>
           <div className="flex items-center justify-center">
             <p className="font-gangwonEdu text-[20px] md:text-[22px] lg:text-[24px] mt-2 overflow-hidden text-ellipsis whitespace-nowrap max-w-[60px] md:max-w-[80px] lg:max-w-[100px]">
-              8월
+              {schedule.month}
             </p>
           </div>
         </div>

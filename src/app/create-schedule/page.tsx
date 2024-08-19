@@ -1,4 +1,5 @@
-'use client'
+'use client';
+
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,7 +15,7 @@ import SelectedLocationsList from './_component/SelectedLocationsList';
 import ParticipantsInput from './_component/ParticipantsInput';
 
 const CreateSchedulePage = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [planName, setPlanName] = useState('');
   const [month, setMonth] = useState('');
   const [participants, setParticipants] = useState<string[]>([]);
@@ -23,6 +24,12 @@ const CreateSchedulePage = () => {
   const [selectedDates, setSelectedDates] = useState<string[]>([]); // Define the type explicitly
 
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login'); // Redirect to login if not authenticated
+    }
+  }, [status, router]);
 
   useEffect(() => {
     const options = Array.from({ length: 6 }, (_, i) => {
@@ -34,28 +41,56 @@ const CreateSchedulePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const { data, error } = await supabase
+  
+    // 약속 생성
+    const { data: scheduleData, error: scheduleError } = await supabase
       .from('schedules')
       .insert([
         {
           plan_name: planName,
           month,
-          dates: selectedDates, // Include selectedDates in the data
+          dates: selectedDates,
           locations: selectedLocations,
           participants,
           created_by: session?.user?.id,
         }
       ])
       .select();
-
-    if (error) {
-      console.error('Error saving schedule:', error);
+  
+    if (scheduleError) {
+      console.error('Error saving schedule:', scheduleError);
       return;
     }
-
-    router.push(`/schedule/${data[0].id}`);
+  
+    const scheduleId = scheduleData[0].id;
+  
+    // 참가자들에게 초대 생성
+    const invitations = participants.map(participantId => ({
+      schedule_id: scheduleId,
+      user_id: participantId,
+    }));
+  
+    const { error: invitationError } = await supabase
+      .from('invitations')
+      .insert(invitations);
+  
+    if (invitationError) {
+      console.error('Error sending invitations:', invitationError);
+      return;
+    }
+  
+    // 약속 상세 페이지로 이동
+    router.push(`/schedule/${scheduleId}`);
   };
+  
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session) {
+    return <div>Please sign in</div>;
+  }
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
