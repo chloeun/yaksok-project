@@ -1,24 +1,82 @@
-'use client';
-
-import { useSession, signOut } from 'next-auth/react';
-import { useEffect } from 'react';
+'use client'
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 import Navbar from '@/components/Navbar';
 import Image from 'next/image'; 
 import YaksokLogo from '@/assets/images/YaksokLogo.png';
-import BirthdayTheme from '@/assets/images/birthdayTheme.png';  // Import the uploaded image
-import { FaRegClock } from "react-icons/fa6";
-import { PiMapPinSimpleArea } from "react-icons/pi";
-import { IoPeopleOutline } from "react-icons/io5";
-import { GoClock } from "react-icons/go";
-import { IoIosAddCircleOutline } from "react-icons/io";
-import ReminderBox from './_component/ReminderBox';
+import { IoIosAddCircleOutline } from 'react-icons/io';
 import InvitationBox from './_component/InvitationBox';
+import ReminderBox from './_component/ReminderBox';
+
+interface User {
+  name: string;
+}
+
+interface Schedule {
+  id: string;
+  plan_name: string;
+  month: string;
+  dates: string[];
+  locations: Array<{ title: string; roadAddress: string }>;
+  created_by: string;
+  users: User[];
+}
+
+interface Invitation {
+  id: string;
+  schedule_id: string;
+  schedules: Schedule[]; 
+  status: string;
+}
 
 const MainPage = () => {
   const { data: session, status } = useSession();
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
-    console.log("Session data:", session);
+    if (status === 'unauthenticated' && session === null) {
+      router.push('/login');
+    }
+  }, [status, session, router]);
+  
+
+  useEffect(() => {
+    const fetchInvitations = async () => {
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from('invitations')
+          .select(`
+            id,
+            schedule_id,
+            status,
+            schedules (
+              id,
+              plan_name,
+              month,
+              dates,
+              locations,
+              created_by,
+              users (name)
+            )
+          `)
+          .eq('user_id', session.user.id)
+          .eq('status', 'pending');
+
+        if (error) {
+          console.error('Error fetching invitations:', error);
+        } else {
+          console.log('Fetched invitations:', data);
+          setInvitations(data as Invitation[]);
+        }
+      }
+    };
+
+    if (session?.user?.id) {
+      fetchInvitations();
+    }
   }, [session]);
 
   if (status === 'loading') {
@@ -26,8 +84,14 @@ const MainPage = () => {
   }
 
   if (!session) {
-    return <div>Please sign in</div>;
+    return null;
   }
+
+  console.log('Invitations state:', invitations);
+
+  const handleCreateSchedule = () => {
+    router.push('/create-schedule');
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
@@ -49,19 +113,39 @@ const MainPage = () => {
           </h1>
         </div>
 
-        {/* New Invitation Box Section */}
         <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4">
           초대받은 약속:
         </h2>
-        <InvitationBox />
+        {invitations.length > 0 ? (
+          invitations.map(invitation => {
+            console.log('Schedules data in map:', invitation.schedules); // Check data within map
+            if (invitation.schedules) { // Ensure this is a valid Schedule object
+              return (
+                <div key={invitation.id} className="mb-4"> {/* Add margin-bottom to create space */}
+                  <InvitationBox 
+                    schedule={invitation.schedules as any} // Pass the object directly
+                  />
+                </div>
+              );
+            } else {
+              return (
+                <p key={invitation.id} className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">초대받은 약속이 없습니다.</p>
+              );
+            }
+          })
+        ) : (
+          <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">초대받은 약속이 없습니다.</p>
+        )}
 
-        {/* Reminder Box Section */}
-        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4">
+        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
           다가오는 약속:
         </h2>
         <ReminderBox />
-        <button className="bg-buttonA hover:bg-secondaryHover min-w-[320px] tracking-[0.30em] w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[8px] md:py-[12px] lg:py-[14px] px-14 md:px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis">
-          <IoIosAddCircleOutline className="mr-2 text-xl md:text-3xl lg:text-4xl" /> {/* Icon added here */}
+
+        <button 
+          onClick={handleCreateSchedule}
+          className="bg-buttonA hover:bg-secondaryHover min-w-[320px] tracking-[0.30em] mt-3 w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[8px] md:py-[12px] lg:py-[14px] px-14 md:px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis">
+          <IoIosAddCircleOutline className="mr-2 text-xl md:text-3xl lg:text-4xl" />
           약속 만들기
         </button>
       </div>

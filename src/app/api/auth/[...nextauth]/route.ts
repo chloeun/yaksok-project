@@ -4,8 +4,8 @@ import KakaoProvider from 'next-auth/providers/kakao';
 import { createClient } from '@supabase/supabase-js';
 import { JWT } from 'next-auth/jwt';
 import { Session } from 'next-auth';
-import { setSession, clearSession } from '@/stores/slice/sessionSlice';
-import { store } from '@/stores/store'; // Import the store
+import { setSession } from '@/stores/slice/sessionSlice';
+import { store } from '@/stores/store';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -14,7 +14,7 @@ const supabase = createClient(
 
 interface CustomToken extends JWT {
   id?: string;
-  username?: string; 
+  username?: string;
 }
 
 interface CustomSession extends Session {
@@ -37,7 +37,7 @@ export const authOptions: AuthOptions = {
 
         const { id, password } = credentials;
         
-        // Fetch the user from the Supabase users table
+        // Supabase에서 사용자 가져오기
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -50,8 +50,8 @@ export const authOptions: AuthOptions = {
 
         const user = data;
 
-        // Validate password
-        const isValidPassword = password === user.password; // No hashing
+        // 비밀번호 검증 (보안상 해시 암호화를 고려)
+        const isValidPassword = password === user.password;
         if (!isValidPassword) {
           return null;
         }
@@ -73,30 +73,31 @@ export const authOptions: AuthOptions = {
     signOut: '/auth/signout',
     error: '/auth/error',
     verifyRequest: '/auth/verify-request',
-    newUser: undefined,
   },
   session: {
     strategy: 'jwt',
+    maxAge: 7 * 24 * 60 * 60, // 7일간 세션 지속
+    updateAge: 24 * 60 * 60,  // 24시간마다 세션 갱신
   },
   callbacks: {
     async jwt({ token, user }: { token: CustomToken; user?: any }): Promise<CustomToken> {
       if (user) {
         token.id = user.id;
+        token.username = user.username;
       }
       return token;
     },
     async session({ session, token }: { session: CustomSession; token: CustomToken }): Promise<CustomSession> {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.username = token.username as string; // Add this line
-        session.user.name = token.name as string;
-        store.dispatch(setSession(session.user));
+        session.user.username = token.username as string;
+        store.dispatch(setSession(session.user)); // Redux에 세션 저장
       }
       return session;
     },
     async signIn({ user, account }) {
       if (account?.provider === 'kakao') {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('users')
           .select('*')
           .eq('username', user.name)
@@ -113,7 +114,6 @@ export const authOptions: AuthOptions = {
           }
         }
       }
-
       return true;
     },
   },
