@@ -42,7 +42,12 @@ const CreateSchedulePage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
-    // 약속 생성
+    if (!session) {
+      console.error('Session is missing');
+      return;
+    }
+  
+    // Create the schedule
     const { data: scheduleData, error: scheduleError } = await supabase
       .from('schedules')
       .insert([
@@ -64,7 +69,22 @@ const CreateSchedulePage = () => {
   
     const scheduleId = scheduleData[0].id;
   
-    // 참가자들에게 초대 생성
+    // Insert the organizer's response
+    const { error: organizerResponseError } = await supabase
+      .from('responses')
+      .insert({
+        schedule_id: scheduleId,
+        user_id: session.user?.id,
+        selected_dates: selectedDates,
+        selected_locations: selectedLocations,
+      });
+  
+    if (organizerResponseError) {
+      console.error('Error saving organizer response:', organizerResponseError);
+      return;
+    }
+  
+    // Create invitations for participants
     const invitations = participants.map(participantId => ({
       schedule_id: scheduleId,
       user_id: participantId,
@@ -79,11 +99,42 @@ const CreateSchedulePage = () => {
       return;
     }
   
-    // 약속 상세 페이지로 이동
-    router.push(`/schedule/${scheduleId}`);
+    // Check if all users have responded
+    const { data: responsesData, error: responsesError } = await supabase
+      .from('responses')
+      .select('user_id')
+      .eq('schedule_id', scheduleId);
+  
+    if (responsesError) {
+      console.error('Error fetching responses:', responsesError);
+      return;
+    }
+  
+    const { data: invitationsData, error: invitationsError } = await supabase
+      .from('invitations')
+      .select('user_id')
+      .eq('schedule_id', scheduleId)
+      .eq('status', 'accepted');
+  
+    if (invitationsError) {
+      console.error('Error fetching invitations:', invitationsError);
+      return;
+    }
+  
+    const respondedUserIds = responsesData.map((response: any) => response.user_id);
+    const allResponded = invitationsData.every((invitation: { user_id: string }) =>
+      respondedUserIds.includes(invitation.user_id)
+    );
+  
+    if (allResponded) {
+      // 모든 사용자가 응답한 경우 조율 페이지로 이동
+      router.push(`/coordinate-schedule/${scheduleId}`);
+    } else {
+      // 응답 대기 페이지로 이동
+      router.push(`/waiting-for-responses/${scheduleId}`);
+    }
   };
   
-
   if (status === 'loading') {
     return <div>Loading...</div>;
   }

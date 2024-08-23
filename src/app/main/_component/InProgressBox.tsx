@@ -2,7 +2,7 @@
 
 import dayjs from "dayjs";
 
-const InvitationBox = ({ schedule, onAccept, onReject }: any) => {
+const InProgressBox = ({ schedule, onGoTo }: any) => {
   const inviterName = Array.isArray(schedule.users)
     ? schedule.users[0]?.name || "알 수 없음"
     : schedule?.users?.name || "알 수 없음";
@@ -39,20 +39,14 @@ const InvitationBox = ({ schedule, onAccept, onReject }: any) => {
       </div>
       <div className="flex flex-col items-center ml-4 space-y-3">
         <button 
-          className="px-2 py-1 rounded-lg bg-[#eafcff] text-[#4D4C51] text-[10px] md:text-[12px] lg:text-[14px] font-semibold hover:bg-[#b5e7f5] tracking-[0.20em] shadow-md"
-          onClick={onAccept} 
+          className="px-4 py-2 rounded-lg bg-[#eafcff] text-[#4D4C51] text-[12px] md:text-[14px] lg:text-[16px] font-semibold hover:bg-[#b5e7f5] tracking-[0.20em] shadow-md"
+          onClick={onGoTo}
         >
-          수락
-        </button>
-        <button 
-          className="px-2 py-1 rounded-lg bg-[#FFE6E0] text-[#4D4C51] text-[10px] md:text-[12px] lg:text-[14px] font-semibold hover:bg-[#f4c8bd] tracking-[0.20em] shadow-md"
-          onClick={onReject}
-        >
-          거절
+          Go
         </button>
       </div>
     </div>
   );
 };
 
-export default InvitationBox;
+export default InProgressBox;

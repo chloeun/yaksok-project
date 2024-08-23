@@ -16,29 +16,26 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   const dispatch = useDispatch();
   const { data: session, status } = useSession();
   const clientSession = useSelector((state: RootState) => state.session.user);
-  const router = useRouter(); // Router 객체 추가
-
+  const router = useRouter();
 
   console.log('Session status:', status);
   console.log('Session data:', session);
   console.log('Redux session:', clientSession);
-  
-  // 세션 데이터를 Redux store에 동기화
+
   useEffect(() => {
-    if (session && session.user) {
-      dispatch(setSession(session.user));
+    if (status === 'loading') return; // 세션이 로딩 중일 때 리디렉션 방지
+
+    if (status === 'authenticated' && session?.user) {
+      dispatch(setSession(session.user)); // 클라이언트 세션을 Redux에 저장
     } else if (status === 'unauthenticated') {
-      dispatch(clearSession());
-      router.push('/login'); // 인증되지 않은 경우 로그인 페이지로 리디렉트
+      router.push('/login'); // 인증되지 않은 경우 로그인 페이지로 리디렉션
     }
   }, [session, status, dispatch, router]);
 
-  // 세션이 로딩 중일 때 로딩 메시지를 표시
-  if (status === 'loading') {
+  if (status === 'loading'&&'unauthenticated') {
     return <div>Loading...</div>;
   }
 
-  // 사용자가 인증되지 않은 경우 기본 레이아웃을 제공
   if (status === 'unauthenticated') {
     return (
       <div>
@@ -53,8 +50,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
     );
   }
 
-
-  // 인증된 사용자를 위한 레이아웃
   return (
     <>
       <header>

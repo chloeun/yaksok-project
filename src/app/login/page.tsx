@@ -1,7 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -10,10 +10,30 @@ import { RiKakaoTalkFill } from 'react-icons/ri';
 const SignIn = () => {
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
 
+  // Load the remembered ID from localStorage on component mount
+  useEffect(() => {
+    const storedId = localStorage.getItem('rememberedId');
+    if (storedId) {
+      setId(storedId);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Handle the form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Store or remove the ID based on the "Remember Me" checkbox
+    if (rememberMe) {
+      localStorage.setItem('rememberedId', id);
+    } else {
+      localStorage.removeItem('rememberedId');
+    }
+
+    // Perform sign-in using NextAuth
     const result = await signIn('credentials', { id, password, redirect: false });
 
     if (result?.ok) {
@@ -34,7 +54,7 @@ const SignIn = () => {
         <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-5 pt-10 pb-12 rounded-2xl shadow-md md:max-w-2xl mt-4 md:p-10">
           <div className="flex flex-col items-center mb-6">
             <button
-              type="button"  // 카카오 로그인 버튼의 타입을 "button"으로 설정
+              type="button"
               onClick={() => signIn('kakao')}
               className="bg-[#ffe403] hover:bg-yellow-500 tracking-[0.10em] w-full text-lg text-textButton font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center transition"
             >
@@ -66,9 +86,19 @@ const SignIn = () => {
               placeholder="비밀번호"
             />
           </div>
+          <div className="flex items-center mb-6">
+            <input
+              id="rememberMe"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="mr-2"
+            />
+            <label htmlFor="rememberMe" className="text-gray-600">아이디 기억하기</label>
+          </div>
           <div className="flex items-center justify-center mt-10 ">
             <button
-              type="submit"  // 로그인 버튼의 타입을 "submit"으로 설정
+              type="submit"
               className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"
             >
               로그인
