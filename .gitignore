@@ -40,9 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# tailwind
-tailwind.config.js
-tailwind.config.ts
-
 # Supabase
 .supabase
