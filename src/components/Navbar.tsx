@@ -65,7 +65,7 @@ const Navbar = () => {
         <Link href="/" passHref>
           <div className="block px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-100 rounded-t-lg">Home</div>
         </Link>
-        <Link href="/profile" passHref>
+        <Link href="/" passHref>
           <div className="block px-4 py-3 text-gray-800 cursor-pointer hover:bg-gray-100">Profile</div>
         </Link>
         <Link href="/login" passHref>
