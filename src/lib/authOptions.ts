@@ -27,6 +27,7 @@ interface CustomSession extends Session {
 
 export const authOptions: AuthOptions = {
   debug: true,
+  secret: process.env.NEXTAUTH_SECRET,  // Add this line to include the secret
   providers: [
     CredentialsProvider({
       name: 'Credentials',
