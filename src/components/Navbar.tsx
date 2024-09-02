@@ -40,7 +40,7 @@ const Navbar = () => {
             <span className="hidden md:inline font-pretendard">Home</span>
           </div>
         </Link>
-        <Link href="/profile" passHref>
+        <Link href="/" passHref>
           <div className="text-gray-600 cursor-pointer flex items-center space-x-2">
             <FiUser color={iconColor} size={24} />
             <span className="hidden md:inline text-">Profile</span>
