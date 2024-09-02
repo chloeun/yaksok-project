@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import Image from 'next/image';
 import YaksokLogo from '@/assets/images/YaksokLogo.png';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import InvitationBox from './_component/InvitationBox';
+import InProgressBox from './_component/InProgressBox'; // New component for in-progress schedules
 import ReminderBox from './_component/ReminderBox';
 
 interface User {
@@ -27,6 +28,7 @@ interface Schedule {
 interface Invitation {
   id: string;
   schedule_id: string;
+  last_page: string; // Track the last page the user visited
   schedules: Schedule[]; 
   status: string;
 }
@@ -34,6 +36,7 @@ interface Invitation {
 const MainPage = () => {
   const { data: session, status } = useSession();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [inProgress, setInProgress] = useState<Invitation[]>([]); // Schedules in progress
   const router = useRouter();
 
   useEffect(() => {
@@ -41,7 +44,6 @@ const MainPage = () => {
       router.push('/login');
     }
   }, [status, session, router]);
-  
 
   useEffect(() => {
     const fetchInvitations = async () => {
@@ -52,6 +54,7 @@ const MainPage = () => {
             id,
             schedule_id,
             status,
+            last_page,
             schedules (
               id,
               plan_name,
@@ -62,14 +65,13 @@ const MainPage = () => {
               users (name)
             )
           `)
-          .eq('user_id', session.user.id)
-          .eq('status', 'pending');
+          .eq('user_id', session.user.id);
 
         if (error) {
           console.error('Error fetching invitations:', error);
         } else {
-          console.log('Fetched invitations:', data);
-          setInvitations(data as Invitation[]);
+          setInvitations(data.filter((inv: any) => inv.status === 'pending'));
+          setInProgress(data.filter((inv: any) => inv.status === 'accepted'));
         }
       }
     };
@@ -79,6 +81,50 @@ const MainPage = () => {
     }
   }, [session]);
 
+  const handleCreateSchedule = () => {
+    router.push('/create-schedule');
+  };
+
+  const handleAcceptInvitation = async (scheduleId: string, invitationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('invitations')
+        .update({ status: 'accepted', last_page: 'invited-schedule' })
+        .eq('id', invitationId);
+
+      if (error) {
+        console.error('Error accepting invitation:', error);
+      } else {
+        router.push(`/invited-schedule/${scheduleId}`);
+      }
+    } catch (error) {
+      console.error('Unexpected error accepting invitation:', error);
+    }
+  };
+
+  const handleRejectInvitation = async (invitationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (error) {
+        console.error('Error rejecting invitation:', error);
+      } else {
+        setInvitations(prevInvitations => 
+          prevInvitations.filter(invitation => invitation.id !== invitationId)
+        );
+      }
+    } catch (error) {
+      console.error('Unexpected error rejecting invitation:', error);
+    }
+  };
+
+  const handleGoToLastPage = (scheduleId: string, lastPage: string) => {
+    router.push(`/${lastPage}/${scheduleId}`);
+  };
+
   if (status === 'loading') {
     return <div>Loading...</div>;
   }
@@ -86,12 +132,6 @@ const MainPage = () => {
   if (!session) {
     return null;
   }
-
-  console.log('Invitations state:', invitations);
-
-  const handleCreateSchedule = () => {
-    router.push('/create-schedule');
-  };
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
@@ -117,24 +157,33 @@ const MainPage = () => {
           초대받은 약속:
         </h2>
         {invitations.length > 0 ? (
-          invitations.map(invitation => {
-            console.log('Schedules data in map:', invitation.schedules); // Check data within map
-            if (invitation.schedules) { // Ensure this is a valid Schedule object
-              return (
-                <div key={invitation.id} className="mb-4"> {/* Add margin-bottom to create space */}
-                  <InvitationBox 
-                    schedule={invitation.schedules as any} // Pass the object directly
-                  />
-                </div>
-              );
-            } else {
-              return (
-                <p key={invitation.id} className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">초대받은 약속이 없습니다.</p>
-              );
-            }
-          })
+          invitations.map(invitation => (
+            <div key={invitation.id} className="mb-4">
+              <InvitationBox 
+                schedule={invitation.schedules as any} 
+                onAccept={() => handleAcceptInvitation(invitation.schedule_id, invitation.id)} 
+                onReject={() => handleRejectInvitation(invitation.id)}
+              />
+            </div>
+          ))
         ) : (
           <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">초대받은 약속이 없습니다.</p>
+        )}
+
+        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
+          조율 진행 중인 약속:
+        </h2>
+        {inProgress.length > 0 ? (
+          inProgress.map(invitation => (
+            <div key={invitation.id} className="mb-4">
+              <InProgressBox 
+                schedule={invitation.schedules as any} 
+                onGoTo={() => handleGoToLastPage(invitation.schedule_id, invitation.last_page)}
+              />
+            </div>
+          ))
+        ) : (
+          <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">진행 중인 약속이 없습니다.</p>
         )}
 
         <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
