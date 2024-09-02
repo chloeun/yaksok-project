@@ -28,13 +28,13 @@ const WaitingForResponsesPage = () => {
   useEffect(() => {
     const checkResponses = async () => {
       const scheduleId = params.id;
-      if (scheduleId) {
+      if (scheduleId && session?.user?.id) {
         // Update the last_page in the invitations table
         await supabase
           .from('invitations')
           .update({ last_page: 'waiting-for-responses' })
           .eq('schedule_id', scheduleId)
-          .eq('user_id', session?.user?.id);
+          .eq('user_id', session.user.id);
 
         // 초대 상태가 'accepted'인 초대 목록 가져오기
         const { data: invitations, error: invitationsError } = await supabase
@@ -84,7 +84,7 @@ const WaitingForResponsesPage = () => {
     };
 
     checkResponses();
-  }, [params.id]);
+  }, [params.id, session?.user?.id]);
 
   // 모든 응답이 완료된 경우 조율 페이지로 리다이렉트
   useEffect(() => {
