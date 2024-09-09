@@ -133,9 +133,9 @@ const MainPage = () => {
     return null;
   }
 
-  return (
+  return ( 
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
-      <Navbar />
+      {/* <Navbar /> */}
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl lg:max-w-3xl">
         <div className="ml-2 flex items-center justify-left md:justify-start my-4 md:mb-6 lg:mb-8">
           <Image 

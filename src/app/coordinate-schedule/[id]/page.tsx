@@ -142,7 +142,7 @@ const CoordinateSchedulePage = () => {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-[#F5F5F5] pt-16 md:pt-24">
-      <Navbar />
+      {/* <Navbar /> */}
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-lg lg:max-w-xl">
         <div className="text-center p-4">
           <h1 className="text-[22px] md:text-[30px] font-bold text-[#333] font-pretendard tracking-[0.3em] mb-2">

@@ -16,7 +16,6 @@ interface Schedule {
   month: string;
   dates: string[];
   created_by: string;
-  users: { name: string }[];
 }
 
 const InvitedSchedulePage = () => {
@@ -27,7 +26,6 @@ const InvitedSchedulePage = () => {
   const router = useRouter();
   const params = useParams();
 
-  // 인증되지 않은 경우 로그인 페이지로 리다이렉트
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -50,7 +48,7 @@ const InvitedSchedulePage = () => {
         } else {
           setSchedule(data as Schedule);
 
-          // Update the last_page in the invitations table
+          // Update last_page in invitations table
           await supabase
             .from('invitations')
             .update({ last_page: 'invited-schedule' })
@@ -63,7 +61,6 @@ const InvitedSchedulePage = () => {
     fetchSchedule();
   }, [params.id, session]);
 
-  // 사용자가 날짜와 장소 선택 후 제출 시
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -72,10 +69,8 @@ const InvitedSchedulePage = () => {
       return;
     }
 
-    console.log('Submitting selected dates and locations:', selectedDates, selectedLocations);
-
-    // 응답 저장
-    const { error } = await supabase
+    // Save user's response
+    const { error: responseError } = await supabase
       .from('responses')
       .insert({
         schedule_id: schedule.id,
@@ -84,12 +79,34 @@ const InvitedSchedulePage = () => {
         selected_locations: selectedLocations,
       });
 
-    if (error) {
-      console.error('Error saving response:', error);
+    if (responseError) {
+      console.error('Error saving response:', responseError);
       return;
     }
 
-    // 모든 사용자가 응답했는지 확인
+    // Fetch all invitations for this schedule
+    const { data: invitationsData, error: invitationsError } = await supabase
+      .from('invitations')
+      .select('user_id, status')
+      .eq('schedule_id', schedule.id);
+
+    if (invitationsError) {
+      console.error('Error fetching invitations:', invitationsError);
+      return;
+    }
+
+    // Check if there are any pending invitations
+    const pendingInvitations = invitationsData.filter(
+      (invitation: { status: string }) => invitation.status === 'pending'
+    );
+
+    if (pendingInvitations.length > 0) {
+      // If there are any pending invitations, stay on the waiting page
+      router.push(`/waiting-for-responses/${schedule.id}`);
+      return;
+    }
+
+    // Fetch responses of accepted invitations
     const { data: responsesData, error: responsesError } = await supabase
       .from('responses')
       .select('user_id')
@@ -100,29 +117,21 @@ const InvitedSchedulePage = () => {
       return;
     }
 
-    const { data: invitationsData, error: invitationsError } = await supabase
-      .from('invitations')
-      .select('user_id')
-      .eq('schedule_id', schedule.id)
-      .eq('status', 'accepted');
-
-    if (invitationsError) {
-      console.error('Error fetching invitations:', invitationsError);
-      return;
-    }
-
+    // Filter accepted invitations
+    const acceptedInvitations = invitationsData.filter(
+      (invitation: { status: string }) => invitation.status === 'accepted'
+    );
     const respondedUserIds = responsesData.map((response: any) => response.user_id);
-    const allResponded = invitationsData.every((invitation: { user_id: string }) =>
+
+    // Check if all accepted users have responded
+    const allAcceptedResponded = acceptedInvitations.every((invitation: { user_id: string }) =>
       respondedUserIds.includes(invitation.user_id)
     );
 
-    if (allResponded) {
-      console.log('All users have responded, redirecting to the coordinate schedule page');
-      // 모든 사용자가 응답한 경우 조율 페이지로 이동
+    // If all accepted users have responded, redirect to coordinate schedule
+    if (allAcceptedResponded) {
       router.push(`/coordinate-schedule/${schedule.id}`);
     } else {
-      console.log('Not all users have responded, redirecting to the waiting page');
-      // 응답 대기 페이지로 이동
       router.push(`/waiting-for-responses/${schedule.id}`);
     }
   };
@@ -139,7 +148,7 @@ const InvitedSchedulePage = () => {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
-      <Navbar />
+      {/* <Navbar /> */}
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl">
         <div className="md:text-center p-2 md:p-4">
           <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-2 md:mb-3">
@@ -171,9 +180,9 @@ const InvitedSchedulePage = () => {
           </form>
         </div>
       </div>
-      <div id="map" style={{ width: '100%', height: '0', visibility: 'hidden' }}></div>
     </div>
   );
 };
+
 
 export default InvitedSchedulePage;
