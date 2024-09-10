@@ -23,6 +23,7 @@ const InvitedSchedulePage = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<{ title: string, roadAddress: string }[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});  // 오류 메시지 상태
   const router = useRouter();
   const params = useParams();
 
@@ -61,15 +62,38 @@ const InvitedSchedulePage = () => {
     fetchSchedule();
   }, [params.id, session]);
 
+  // 유효성 검사 함수
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!selectedDates.length) newErrors.dates = '약속 날짜를 선택하세요.';
+    if (!selectedLocations.length) newErrors.locations = '약속 장소를 선택하세요.';
+    
+    setErrors(newErrors);
+
+    // 오류가 없을 경우에만 form이 제출되도록 함
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Enter 키로 인한 form 제출 방지
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();  // Enter 키로 인해 form이 제출되지 않도록 함
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 유효성 검사
+    if (!validateForm()) return;
 
     if (!schedule || !session) {
       console.error('Schedule or session is missing');
       return;
     }
 
-    // Save user's response
+    // 사용자의 응답 저장
     const { error: responseError } = await supabase
       .from('responses')
       .insert({
@@ -84,7 +108,7 @@ const InvitedSchedulePage = () => {
       return;
     }
 
-    // Fetch all invitations for this schedule
+    // 모든 초대 상태 확인
     const { data: invitationsData, error: invitationsError } = await supabase
       .from('invitations')
       .select('user_id, status')
@@ -95,18 +119,17 @@ const InvitedSchedulePage = () => {
       return;
     }
 
-    // Check if there are any pending invitations
+    // 대기 중인 초대가 있는지 확인
     const pendingInvitations = invitationsData.filter(
       (invitation: { status: string }) => invitation.status === 'pending'
     );
 
     if (pendingInvitations.length > 0) {
-      // If there are any pending invitations, stay on the waiting page
       router.push(`/waiting-for-responses/${schedule.id}`);
       return;
     }
 
-    // Fetch responses of accepted invitations
+    // 응답 완료된 초대 확인
     const { data: responsesData, error: responsesError } = await supabase
       .from('responses')
       .select('user_id')
@@ -117,18 +140,17 @@ const InvitedSchedulePage = () => {
       return;
     }
 
-    // Filter accepted invitations
     const acceptedInvitations = invitationsData.filter(
       (invitation: { status: string }) => invitation.status === 'accepted'
     );
     const respondedUserIds = responsesData.map((response: any) => response.user_id);
 
-    // Check if all accepted users have responded
+    // 모든 승인된 사용자가 응답했는지 확인
     const allAcceptedResponded = acceptedInvitations.every((invitation: { user_id: string }) =>
       respondedUserIds.includes(invitation.user_id)
     );
 
-    // If all accepted users have responded, redirect to coordinate schedule
+    // 모든 응답이 완료되었으면 일정 조율 페이지로 이동
     if (allAcceptedResponded) {
       router.push(`/coordinate-schedule/${schedule.id}`);
     } else {
@@ -147,7 +169,7 @@ const InvitedSchedulePage = () => {
   const formattedMonth = schedule?.month ? dayjs(schedule.month).format('M') + '월' : '';
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16" onKeyDown={handleKeyDown}>
       {/* <Navbar /> */}
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl">
         <div className="md:text-center p-2 md:p-4">
@@ -167,8 +189,13 @@ const InvitedSchedulePage = () => {
           </div>
           <form onSubmit={handleSubmit}>
             <CalendarSelector month={schedule?.month || ''} setSelectedDates={setSelectedDates} />
+            {errors.dates && <p className="text-red-500 text-sm mt-1">{errors.dates}</p>} {/* 날짜 오류 메시지 */}
+
             <LocationSelector selectedLocations={selectedLocations} setSelectedLocations={setSelectedLocations} />
+            {errors.locations && <p className="text-red-500 text-sm mt-1">{errors.locations}</p>} {/* 장소 오류 메시지 */}
+
             <SelectedLocationsList selectedLocations={selectedLocations} setSelectedLocations={setSelectedLocations} />
+
             <div className="flex items-center justify-center mt-10">
               <button
                 className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"

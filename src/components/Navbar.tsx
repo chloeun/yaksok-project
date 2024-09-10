@@ -57,7 +57,7 @@ const Navbar = () => {
       {/* 네비게이션 메뉴 영역 (Home, Profile, Logout, 햄버거 메뉴) */}
       <div className="space-x-4 flex pr-1">
         {/* Home 링크 버튼 */}
-        <Link href="/" passHref>
+        <Link href="/main" passHref>
           <div className="text-gray-600 cursor-pointer flex items-center space-x-2">
             <IoHomeOutline color={iconColor} size={24} /> {/* 홈 아이콘 */}
             <span className="hidden md:inline font-pretendard">Home</span> {/* Home 텍스트 (작은 화면에서는 숨김) */}

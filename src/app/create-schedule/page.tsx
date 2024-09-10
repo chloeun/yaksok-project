@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import Navbar from '@/components/Navbar';
 import dayjs from 'dayjs';
 import PlanNameInput from './_component/PlanNameInput';
 import MonthSelector from './_component/MonthSelector';
@@ -13,14 +12,23 @@ import LocationSelector from './_component/LocationSelector';
 import SelectedLocationsList from './_component/SelectedLocationsList';
 import ParticipantsInput from './_component/ParticipantsInput';
 
+interface Location {
+  title: string;
+  roadAddress: string;
+}
+
 const CreateSchedulePage = () => {
   const { data: session, status } = useSession();
-  const [planName, setPlanName] = useState('');
-  const [month, setMonth] = useState('');
-  const [participants, setParticipants] = useState<string[]>([]);
-  const [monthsOptions, setMonthsOptions] = useState<string[]>([]);
-  const [selectedLocations, setSelectedLocations] = useState<{ title: string, roadAddress: string }[]>([]);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  
+  // 상태 값에 명시적으로 타입 지정
+  const [planName, setPlanName] = useState<string>(''); // 문자열 상태
+  const [month, setMonth] = useState<string>(''); // 문자열 상태
+  const [participants, setParticipants] = useState<string[]>([]); // 문자열 배열 상태
+  const [monthsOptions, setMonthsOptions] = useState<string[]>([]); // 문자열 배열 상태
+  const [selectedLocations, setSelectedLocations] = useState<Location[]>([]); // 객체 배열 상태
+  const [selectedDates, setSelectedDates] = useState<string[]>([]); // 문자열 배열 상태
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});  // 오류 메시지 상태
 
   const router = useRouter();
 
@@ -38,15 +46,36 @@ const CreateSchedulePage = () => {
     setMonthsOptions(options);
   }, []);
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!planName) newErrors.planName = '약속 이름을 입력하세요.';
+    if (!month) newErrors.month = '약속 기간을 선택하세요.';
+    if (!selectedDates.length) newErrors.dates = '약속 날짜를 선택하세요.';
+    if (!selectedLocations.length) newErrors.locations = '약속 장소를 선택하세요.';
+    if (!participants.length) newErrors.participants = '참여자를 입력하세요.';
+    
+    setErrors(newErrors);
+    
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();  // Enter로 인해 form이 제출되지 않도록 방지
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
 
     if (!session) {
       console.error('Session is missing');
       return;
     }
 
-    // Create the schedule
     const { data: scheduleData, error: scheduleError } = await supabase
       .from('schedules')
       .insert([
@@ -68,7 +97,6 @@ const CreateSchedulePage = () => {
 
     const scheduleId = scheduleData[0].id;
 
-    // Insert the organizer's response
     const { error: organizerResponseError } = await supabase
       .from('responses')
       .insert({
@@ -83,19 +111,17 @@ const CreateSchedulePage = () => {
       return;
     }
 
-    // Mark the schedule as in-progress for the creator in the invitations table
     await supabase
       .from('invitations')
       .insert({
         schedule_id: scheduleId,
         user_id: session.user?.id,
-        username: session.user?.name,  // Store username
-        status: 'accepted',  // Mark as accepted for the creator
-        last_page: 'waiting-for-responses', // Set the last page to waiting
+        username: session.user?.name,
+        status: 'accepted',
+        last_page: 'waiting-for-responses',
         is_final_confirmed: false,
       });
 
-    // Create invitations for participants with their usernames
     for (const participantId of participants) {
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -111,14 +137,13 @@ const CreateSchedulePage = () => {
           .insert({
             schedule_id: scheduleId,
             user_id: participantId,
-            username: userData.username,  // Store username
+            username: userData.username,
             status: 'pending',
             is_final_confirmed: false,
           });
       }
     }
 
-    // Redirect to waiting page
     router.push(`/waiting-for-responses/${scheduleId}`);
   };
 
@@ -131,8 +156,7 @@ const CreateSchedulePage = () => {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
-      {/* <Navbar /> */}
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16" onKeyDown={handleKeyDown}>
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl">
         <div className="md:text-center p-2 md:p-4">
           <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-2 md:mb-3">새 약속 만들기</h1>
@@ -140,11 +164,23 @@ const CreateSchedulePage = () => {
         </div> 
         <form className="w-full max-w-md bg-white p-5 py-7 rounded-2xl shadow-md md:max-w-2xl mt-4 md:p-10" onSubmit={handleSubmit}>
           <PlanNameInput planName={planName} setPlanName={setPlanName} />
+          {errors.planName && <p className="text-red-500 text-sm mt-1">{errors.planName}</p>}
+
           <MonthSelector month={month} setMonth={setMonth} monthsOptions={monthsOptions} />
+          {errors.month && <p className="text-red-500 text-sm mt-1">{errors.month}</p>}
+
           <CalendarSelector month={month} setSelectedDates={setSelectedDates} />
+          {errors.dates && <p className="text-red-500 text-sm mt-1">{errors.dates}</p>}
+
           <LocationSelector selectedLocations={selectedLocations} setSelectedLocations={setSelectedLocations} />
+          {errors.locations && <p className="text-red-500 text-sm mt-1">{errors.locations}</p>}
+
           <SelectedLocationsList selectedLocations={selectedLocations} setSelectedLocations={setSelectedLocations} />
-          <ParticipantsInput participants={participants} setParticipants={setParticipants} />
+          
+          <ParticipantsInput participants={participants} setParticipants={setParticipants} hostId={session?.user?.id ?? ''} />
+
+          {errors.participants && <p className="text-red-500 text-sm mt-1">{errors.participants}</p>}
+
           <div className="flex items-center justify-center mt-10">
             <button
               className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"

@@ -70,11 +70,10 @@ const Calendar = ({ onSelectDates, selectedMonth }: CalendarProps) => {
             <div
               key={index}
               onClick={() => handleDateClick(date)} // 날짜 클릭 시 처리
-              className={`h-12 md:h-14 flex items-center justify-center cursor-pointer rounded-lg transition-all duration-200 ${
-                !visible ? "invisible" : "" // 해당 월에 해당하지 않는 날짜는 보이지 않게 처리
-              } ${today && currentMonth ? "bg-blue-200 text-blue-900" : ""} ${ // 오늘 날짜를 강조
-                isDateSelected(date) ? "bg-[#FFE1DB] text-[#ff5837]" : "hover:bg-gray-100" // 선택된 날짜 강조
-              }`}
+              className={`h-12 md:h-14 flex items-center justify-center cursor-pointer rounded-lg transition-all duration-200 
+              ${!visible ? "invisible" : ""} 
+              ${today && isDateSelected(date) ? "bg-[#FFE1DB] text-[#ff5837]" : today ? "bg-blue-200 text-blue-900" : ""}
+              ${isDateSelected(date) && !today ? "bg-[#FFE1DB] text-[#ff5837]" : "hover:bg-gray-100"}`}
             >
               <span className={`text-sm md:text-base ${!currentMonth ? "text-gray-400" : ""}`}>
                 {visible ? date.date() : ""} {/* 날짜 표시 (해당 월만) */}

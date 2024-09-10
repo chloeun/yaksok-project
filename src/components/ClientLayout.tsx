@@ -5,6 +5,7 @@ import { ReactNode } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar'; // Navbar 컴포넌트를 가져옵니다
+import LoadingPage from '@/components/LoadingPage'; // LoadingPage 컴포넌트를 가져옵니다
 
 type ClientLayoutProps = {
   children: ReactNode;
@@ -23,7 +24,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   }, [status, router]);
 
   if (status === 'loading') {
-    return <div>Loading...</div>; // 로딩 중일 때 로딩 메시지 표시
+    return <LoadingPage />; // 로딩 중일 때 커스텀 로딩 페이지를 표시
   }
 
   return (
