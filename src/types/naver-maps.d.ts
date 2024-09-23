@@ -3,8 +3,17 @@ declare namespace naver.maps {
     constructor(el: HTMLElement | string, options: MapOptions);
     setCenter(latlng: LatLng): void;
     getCenter(): LatLng;
+    setZoom(zoomLevel: number): void;
+    panTo(latlng: naver.maps.LatLng | naver.maps.Point): void;
   }
 
+  interface SearchResultItem {
+    name: string;
+    address: string;
+    latlng: naver.maps.LatLng;
+    distance?: number; // Optional distance property to store the calculated distance
+  }
+  
   interface LatLng {
     lat: number;
     lng: number;

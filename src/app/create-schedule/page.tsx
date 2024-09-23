@@ -152,7 +152,7 @@ const CreateSchedulePage = () => {
   }
 
   if (!session) {
-    return <div>Please sign in</div>;
+    return <div>Please sign in</div>; 
   }
 
   return (
