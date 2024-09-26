@@ -5,6 +5,7 @@ declare namespace naver.maps {
     getCenter(): LatLng;
     setZoom(zoomLevel: number): void;
     panTo(latlng: naver.maps.LatLng | naver.maps.Point): void;
+    fitBounds(bounds: Bounds | BoundsLiteral | ArrayOfCoords | ArrayOfCoordsLiteral, options?: FitBoundsOptions): void; 
   }
 
   interface SearchResultItem {

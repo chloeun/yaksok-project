@@ -40,6 +40,14 @@ const FinalSchedulePage = () => {
     fetchSchedule();
   }, [params.id]);
 
+  const handleGoToDetails = () => {
+    if (schedule?.final_date && schedule?.final_location) {
+      router.push(
+        `/schedule-details/${params.id}?final_date=${schedule.final_date}&final_location=${encodeURIComponent(JSON.stringify(schedule.final_location))}`
+      );
+    }
+  };
+  
   if (status === 'loading' || !schedule) {
     return <div>Loading...</div>;
   }
@@ -66,8 +74,14 @@ const FinalSchedulePage = () => {
             <h1 className="text-[22px] md:text-[28px] font-semibold text-[#333] font-gangwonEdu tracking-[0.3em]">
               {`장소: ${schedule.final_location?.title}`}
             </h1>
-          </div>
+          </div> 
         </div>
+        <button
+          className="mt-6 py-2 px-4 bg-blue-500 text-white rounded-lg"
+          onClick={handleGoToDetails}
+        >
+          약속 상세 페이지로 이동
+        </button>
       </div>
     </div>
   );

@@ -7,9 +7,12 @@ import VoteTab from './VoteTab';
 interface TabMenuProps {
   selectedTab: string;
   handleTabChange: (tab: string) => void;
+  finalLocation: { title: string; roadAddress: string; lat: number; lng: number } | null; // finalLocation 타입을 지정
+  userId: string | null; // userId 추가, nullable
+  scheduleId: string; // scheduleId 추가
 }
 
-const TabMenu = ({ selectedTab, handleTabChange }: TabMenuProps) => {
+const TabMenu = ({ selectedTab, handleTabChange, finalLocation, userId, scheduleId }: TabMenuProps) => {
   return (
     <div className="w-full min-w-[320px] max-w-md font-gangwonEdu bg-white p-5 py-7 rounded-2xl shadow-md md:max-w-2xl lg:max-w-3xl">
       <div className="flex justify-around mb-6 text-[25px] tracking-[0.10em]">
@@ -33,9 +36,9 @@ const TabMenu = ({ selectedTab, handleTabChange }: TabMenuProps) => {
         </button>
       </div>
 
-      {/* 탭 내용 */}
-      {selectedTab === '장소' && <LocationTab />}
-      {selectedTab === '하트' && <HeartTab />}
+      {/* Pass scheduleId to LocationTab */}
+      {selectedTab === '장소' && <LocationTab finalLocation={finalLocation} userId={userId} scheduleId={scheduleId} />}
+      {selectedTab === '하트' && <HeartTab userId={userId} scheduleId={scheduleId}/>}
       {selectedTab === '투표' && <VoteTab />}
     </div>
   );
