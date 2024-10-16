@@ -1,10 +1,9 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import Navbar from '@/components/Navbar';
 import dayjs from 'dayjs';
 
 const FinalSchedulePage = () => {
@@ -25,7 +24,7 @@ const FinalSchedulePage = () => {
       if (scheduleId) {
         const { data, error } = await supabase
           .from('schedules')
-          .select('*')
+          .select('final_date, final_location')
           .eq('id', scheduleId)
           .single();
 
@@ -34,11 +33,36 @@ const FinalSchedulePage = () => {
         } else {
           setSchedule(data);
         }
+
+        // Fetch the current last_page before updating
+        const { data: currentInvitation } = await supabase
+          .from('invitations')
+          .select('last_page')
+          .eq('schedule_id', scheduleId)
+          .eq('user_id', session?.user?.id)
+          .single();
+
+        // Only update if last_page is not already 'final-schedule'
+        if (currentInvitation?.last_page !== 'final-schedule') {
+          await supabase
+            .from('invitations')
+            .update({ last_page: 'final-schedule' })
+            .eq('schedule_id', scheduleId)
+            .eq('user_id', session?.user?.id);
+        }
       }
     };
 
     fetchSchedule();
-  }, [params.id]);
+  }, [params.id, session?.user?.id]);
+
+  const handleGoToDetails = () => {
+    if (schedule?.final_date && schedule?.final_location) {
+      router.push(
+        `/schedule-details/${params.id}?final_date=${schedule.final_date}&final_location=${encodeURIComponent(JSON.stringify(schedule.final_location))}`
+      );
+    }
+  };
 
   if (status === 'loading' || !schedule) {
     return <div>Loading...</div>;
@@ -46,7 +70,6 @@ const FinalSchedulePage = () => {
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-[#F5F5F5] pt-16 md:pt-24">
-      <Navbar />
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-lg lg:max-w-xl">
         <div className="text-center p-4">
           <h1 className="text-[22px] md:text-[30px] font-bold text-[#333] font-pretendard tracking-[0.3em] mb-2">
@@ -68,6 +91,12 @@ const FinalSchedulePage = () => {
             </h1>
           </div>
         </div>
+        <button
+          className="mt-6 py-2 px-4 bg-blue-500 text-white rounded-lg"
+          onClick={handleGoToDetails}
+        >
+          약속 상세 페이지로 이동
+        </button>
       </div>
     </div>
   );

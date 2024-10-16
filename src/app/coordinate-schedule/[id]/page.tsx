@@ -4,13 +4,15 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import Navbar from '@/components/Navbar';
-import dayjs from 'dayjs';
+import ScheduleHeader from './_component/ScheduleHeader';
+import DateOptions from './_component/DateOptions';
+import LocationOptions from './_component/LocationOptions';
+import VoteButton from './_component/VoteButton';
 
 interface ResponseData {
   user_id: string;
   selected_dates: string[];
-  selected_locations: { title: string, roadAddress: string }[];
+  selected_locations: { title: string; roadAddress: string }[];
 }
 
 const CoordinateSchedulePage = () => {
@@ -18,24 +20,37 @@ const CoordinateSchedulePage = () => {
   const [responses, setResponses] = useState<ResponseData[]>([]);
   const [bestDateOptions, setBestDateOptions] = useState<string[]>([]);
   const [bestLocationOptions, setBestLocationOptions] = useState<string[]>([]);
+  const [allAvailableDates, setAllAvailableDates] = useState<string[]>([]);
+  const [allAvailableLocations, setAllAvailableLocations] = useState<string[]>([]);
   const [userVoteDate, setUserVoteDate] = useState<string | null>(null);
-  const [userVoteLocation, setUserVoteLocation] = useState<string | null>(null);
-  const [allResponded, setAllResponded] = useState(false);
+  const [userVoteLocation, setUserVoteLocation] = useState<{ title: string; roadAddress: string } | null>(null);
   const router = useRouter();
   const params = useParams();
+  const [schedule, setSchedule] = useState<any>(null);
 
-  // 인증되지 않은 경우 로그인 페이지로 리다이렉트
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
 
-  // 응답 데이터 가져오기 및 last_page 업데이트
   useEffect(() => {
     const fetchResponses = async () => {
       const scheduleId = params.id;
       if (scheduleId && session?.user) {
+        const { data: scheduleData, error: scheduleError } = await supabase
+          .from('schedules')
+          .select('*')
+          .eq('id', scheduleId)
+          .single();
+
+        if (scheduleError) {
+          console.error('Error fetching schedule:', scheduleError);
+          return;
+        }
+
+        setSchedule(scheduleData);
+
         const { data: responsesData, error: responsesError } = await supabase
           .from('responses')
           .select('*')
@@ -46,21 +61,20 @@ const CoordinateSchedulePage = () => {
         } else {
           setResponses(responsesData);
           calculateBestOptions(responsesData);
-
-          // Update the last_page in the invitations table
-          await supabase
-            .from('invitations')
-            .update({ last_page: 'coordinate-schedule' })
-            .eq('schedule_id', scheduleId)
-            .eq('user_id', session?.user?.id);
         }
+
+        // Update the 'last_page' to 'coordinate-schedule' for the user
+        await supabase
+          .from('invitations')
+          .update({ last_page: 'coordinate-schedule' })
+          .eq('schedule_id', scheduleId)
+          .eq('user_id', session.user.id);
       }
     };
 
     fetchResponses();
   }, [params.id, session]);
 
-  // 최적의 날짜와 장소 계산
   const calculateBestOptions = (responsesData: ResponseData[]) => {
     const dateOccurrences: { [key: string]: number } = {};
     const locationOccurrences: { [key: string]: number } = {};
@@ -76,129 +90,127 @@ const CoordinateSchedulePage = () => {
       });
     });
 
-    const maxDateVotes = Math.max(...Object.values(dateOccurrences));
-    const bestDates = Object.keys(dateOccurrences).filter(date => dateOccurrences[date] === maxDateVotes);
+    const totalResponses = responsesData.length;
+    const commonDates = Object.keys(dateOccurrences).filter((date) => dateOccurrences[date] === totalResponses);
+    const commonLocations = Object.keys(locationOccurrences).filter(
+      (location) => locationOccurrences[location] === totalResponses
+    );
 
-    const maxLocationVotes = Math.max(...Object.values(locationOccurrences));
-    const bestLocations = Object.keys(locationOccurrences).filter(location => locationOccurrences[location] === maxLocationVotes);
+    setAllAvailableDates(commonDates);
+    setAllAvailableLocations(commonLocations);
 
-    setBestDateOptions(bestDates);
-    setBestLocationOptions(bestLocations);
+    const filteredBestDates = Object.keys(dateOccurrences).filter((date) => dateOccurrences[date] > 1);
+    const filteredBestLocations = Object.keys(locationOccurrences).filter((location) => locationOccurrences[location] > 1);
+
+    setBestDateOptions(filteredBestDates);
+    setBestLocationOptions(filteredBestLocations);
   };
 
-  const handleVoteSubmit = async () => {
+  const calculateFinalDecision = (votes: { voted_date: string; voted_station: { title: string; roadAddress: string } }[]) => {
+    const dateCounts: { [key: string]: number } = {};
+    const locationCounts: { [key: string]: number } = {};
+
+    votes.forEach((vote) => {
+      dateCounts[vote.voted_date] = (dateCounts[vote.voted_date] || 0) + 1;
+      const locationKey = `${vote.voted_station.title}:${vote.voted_station.roadAddress}`;
+      locationCounts[locationKey] = (locationCounts[locationKey] || 0) + 1;
+    });
+
+    const finalDate = Object.keys(dateCounts).reduce((a, b) => (dateCounts[a] > dateCounts[b] ? a : b));
+    const finalLocationKey = Object.keys(locationCounts).reduce((a, b) => (locationCounts[a] > locationCounts[b] ? a : b));
+    const [finalLocationTitle, finalLocationAddress] = finalLocationKey.split(':');
+    const finalLocation = { title: finalLocationTitle, roadAddress: finalLocationAddress };
+
+    return { finalDate, finalLocation };
+  };
+
+  const handleVoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (userVoteDate && userVoteLocation) {
-      // Save the vote in the 'votes' table
-      const { error } = await supabase
-        .from('votes')
+      const { error: voteError } = await supabase
+        .from('coordinate_votes') // Use 'coordinate_votes' table for the voting
         .insert({
           schedule_id: params.id,
           user_id: session?.user?.id,
-          voted_date: userVoteDate,  // Corrected field name
-          voted_location: userVoteLocation,  // Corrected field name
+          voted_date: userVoteDate,
+          voted_station: userVoteLocation, // Use 'voted_station' here
         });
-  
-      if (error) {
-        console.error('Error submitting vote:', error);
+
+      if (voteError) {
+        console.error('Error submitting vote:', voteError);
         return;
       }
-  
-      // Check if all users have voted
-      const { data: votesData, error: votesError } = await supabase
-        .from('votes')
-        .select('user_id')
+
+      const { data: scheduleData, error: scheduleError } = await supabase
+        .from('schedules')
+        .select('participants, created_by')
+        .eq('id', params.id)
+        .single();
+
+      if (scheduleError) {
+        console.error('Error fetching schedule participants:', scheduleError);
+        return;
+      }
+
+      const participantIds = scheduleData?.participants ?? [];
+      const organizerId = scheduleData?.created_by;
+      const allParticipants = [...participantIds, organizerId];
+
+      const { data: votes, error: votesError } = await supabase
+        .from('coordinate_votes') // Use 'coordinate_votes' table
+        .select('voted_date, voted_station') // Fetch 'voted_station'
         .eq('schedule_id', params.id);
-  
+
       if (votesError) {
         console.error('Error fetching votes:', votesError);
         return;
       }
-  
-      const { data: invitationsData, error: invitationsError } = await supabase
-        .from('invitations')
-        .select('user_id')
-        .eq('schedule_id', params.id)
-        .eq('status', 'accepted');
-  
-      if (invitationsError) {
-        console.error('Error fetching invitations:', invitationsError);
-        return;
-      }
-  
-      const votedUserIds = votesData.map((vote: any) => vote.user_id);
-      const allVoted = invitationsData.every((invitation: { user_id: string }) =>
-        votedUserIds.includes(invitation.user_id)
-      );
-  
+
+      const allVoted = votes.length === allParticipants.length;
+
       if (allVoted) {
-        console.log('All users have voted, redirecting to the final schedule page');
-        router.push(`/final-schedule/${params.id}`);
+        const { finalDate, finalLocation } = calculateFinalDecision(votes);
+
+        const { error: updateError } = await supabase
+          .from('schedules')
+          .update({
+            final_date: finalDate,
+            final_location: finalLocation,
+          })
+          .eq('id', params.id);
+
+        if (updateError) {
+          console.error('Error updating final schedule:', updateError);
+          return;
+        }
+
+        await router.push(`/final-schedule/${params.id}`);
       } else {
-        console.log('Not all users have voted, redirecting to the waiting page');
-        router.push(`/waiting-for-responses/${params.id}`);
+        await router.push(`/waiting-for-votes/${params.id}`);
       }
     }
   };
 
+  if (status === 'loading' || !schedule) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div className="flex flex-col items-center min-h-screen bg-[#F5F5F5] pt-16 md:pt-24">
-      <Navbar />
-      <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-lg lg:max-w-xl">
-        <div className="text-center p-4">
-          <h1 className="text-[22px] md:text-[30px] font-bold text-[#333] font-pretendard tracking-[0.3em] mb-2">
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
+      <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl">
+        <div className="md:text-center p-2 md:p-4">
+          <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-2 md:mb-3">
             일정 조율
           </h1>
-          <h2 className="text-[14px] md:text-[16px] font-extrabold text-[#666] font-deliusRegular tracking-[0.3em]">
+          <h2 className="text-[14px] md:text-[16px] font-extrabold text-textMain font-deliusRegular tracking-[0.35em]">
             Match Schedules
           </h2>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-lg md:p-8 mt-6">
-          <div className="text-center mb-6">
-            <h1 className="text-[22px] md:text-[28px] font-semibold text-[#333] font-gangwonEdu tracking-[0.3em]">
-              {bestDateOptions.length > 0 ? `최적의 날짜를 선택하세요:` : '추천 날짜가 없습니다'}
-            </h1>
-            {bestDateOptions.map(date => (
-              <div key={date} className="my-2">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="date"
-                    value={date}
-                    onChange={() => setUserVoteDate(date)}
-                  />
-                  <span className="ml-2">{dayjs(date).format('M월 D일')}</span>
-                </label>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mb-6">
-            <h1 className="text-[22px] md:text-[28px] font-semibold text-[#333] font-gangwonEdu tracking-[0.3em]">
-              {bestLocationOptions.length > 0 ? `최적의 장소를 선택하세요:` : '추천 장소가 없습니다'}
-            </h1>
-            {bestLocationOptions.map(location => (
-              <div key={location} className="my-2">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name="location"
-                    value={location}
-                    onChange={() => setUserVoteLocation(location)}
-                  />
-                  <span className="ml-2">{location.split(':')[0]}</span>
-                </label>
-              </div>
-            ))}
-          </div>
-          {bestDateOptions.length > 0 && bestLocationOptions.length > 0 && (
-            <div className="flex justify-center">
-              <button
-                className="bg-[#5BB75B] text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:bg-[#4cae4c] transition-all"
-                onClick={handleVoteSubmit}
-              >
-                선택 완료
-              </button>
-            </div>
-          )}
+        <div className="w-full max-w-md bg-white p-5 py-7 rounded-2xl shadow-md md:max-w-2xl mt-4 md:p-10">
+          <ScheduleHeader schedule={schedule} />
+          <DateOptions allAvailableDates={allAvailableDates} bestDateOptions={bestDateOptions} setUserVoteDate={setUserVoteDate} />
+          <LocationOptions allAvailableLocations={allAvailableLocations} bestLocationOptions={bestLocationOptions} setUserVoteLocation={setUserVoteLocation} />
+          <VoteButton handleVoteSubmit={handleVoteSubmit} />
         </div>
       </div>
     </div>

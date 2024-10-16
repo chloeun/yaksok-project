@@ -16,7 +16,6 @@ interface Schedule {
   month: string;
   dates: string[];
   created_by: string;
-  users: { name: string }[];
 }
 
 const InvitedSchedulePage = () => {
@@ -24,10 +23,10 @@ const InvitedSchedulePage = () => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<{ title: string, roadAddress: string }[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});  // 오류 메시지 상태
   const router = useRouter();
   const params = useParams();
 
-  // 인증되지 않은 경우 로그인 페이지로 리다이렉트
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -50,7 +49,7 @@ const InvitedSchedulePage = () => {
         } else {
           setSchedule(data as Schedule);
 
-          // Update the last_page in the invitations table
+          // Update last_page in invitations table
           await supabase
             .from('invitations')
             .update({ last_page: 'invited-schedule' })
@@ -63,19 +62,39 @@ const InvitedSchedulePage = () => {
     fetchSchedule();
   }, [params.id, session]);
 
-  // 사용자가 날짜와 장소 선택 후 제출 시
+  // 유효성 검사 함수
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!selectedDates.length) newErrors.dates = '약속 날짜를 선택하세요.';
+    if (!selectedLocations.length) newErrors.locations = '약속 장소를 선택하세요.';
+    
+    setErrors(newErrors);
+
+    // 오류가 없을 경우에만 form이 제출되도록 함
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Enter 키로 인한 form 제출 방지
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();  // Enter 키로 인해 form이 제출되지 않도록 함
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 유효성 검사
+    if (!validateForm()) return;
 
     if (!schedule || !session) {
       console.error('Schedule or session is missing');
       return;
     }
 
-    console.log('Submitting selected dates and locations:', selectedDates, selectedLocations);
-
-    // 응답 저장
-    const { error } = await supabase
+    // 사용자의 응답 저장
+    const { error: responseError } = await supabase
       .from('responses')
       .insert({
         schedule_id: schedule.id,
@@ -84,12 +103,33 @@ const InvitedSchedulePage = () => {
         selected_locations: selectedLocations,
       });
 
-    if (error) {
-      console.error('Error saving response:', error);
+    if (responseError) {
+      console.error('Error saving response:', responseError);
       return;
     }
 
-    // 모든 사용자가 응답했는지 확인
+    // 모든 초대 상태 확인
+    const { data: invitationsData, error: invitationsError } = await supabase
+      .from('invitations')
+      .select('user_id, status')
+      .eq('schedule_id', schedule.id);
+
+    if (invitationsError) {
+      console.error('Error fetching invitations:', invitationsError);
+      return;
+    }
+
+    // 대기 중인 초대가 있는지 확인
+    const pendingInvitations = invitationsData.filter(
+      (invitation: { status: string }) => invitation.status === 'pending'
+    );
+
+    if (pendingInvitations.length > 0) {
+      router.push(`/waiting-for-responses/${schedule.id}`);
+      return;
+    }
+
+    // 응답 완료된 초대 확인
     const { data: responsesData, error: responsesError } = await supabase
       .from('responses')
       .select('user_id')
@@ -100,29 +140,20 @@ const InvitedSchedulePage = () => {
       return;
     }
 
-    const { data: invitationsData, error: invitationsError } = await supabase
-      .from('invitations')
-      .select('user_id')
-      .eq('schedule_id', schedule.id)
-      .eq('status', 'accepted');
-
-    if (invitationsError) {
-      console.error('Error fetching invitations:', invitationsError);
-      return;
-    }
-
+    const acceptedInvitations = invitationsData.filter(
+      (invitation: { status: string }) => invitation.status === 'accepted'
+    );
     const respondedUserIds = responsesData.map((response: any) => response.user_id);
-    const allResponded = invitationsData.every((invitation: { user_id: string }) =>
+
+    // 모든 승인된 사용자가 응답했는지 확인
+    const allAcceptedResponded = acceptedInvitations.every((invitation: { user_id: string }) =>
       respondedUserIds.includes(invitation.user_id)
     );
 
-    if (allResponded) {
-      console.log('All users have responded, redirecting to the coordinate schedule page');
-      // 모든 사용자가 응답한 경우 조율 페이지로 이동
+    // 모든 응답이 완료되었으면 일정 조율 페이지로 이동
+    if (allAcceptedResponded) {
       router.push(`/coordinate-schedule/${schedule.id}`);
     } else {
-      console.log('Not all users have responded, redirecting to the waiting page');
-      // 응답 대기 페이지로 이동
       router.push(`/waiting-for-responses/${schedule.id}`);
     }
   };
@@ -138,8 +169,8 @@ const InvitedSchedulePage = () => {
   const formattedMonth = schedule?.month ? dayjs(schedule.month).format('M') + '월' : '';
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
-      <Navbar />
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16" onKeyDown={handleKeyDown}>
+      {/* <Navbar /> */}
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl">
         <div className="md:text-center p-2 md:p-4">
           <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-2 md:mb-3">
@@ -158,8 +189,13 @@ const InvitedSchedulePage = () => {
           </div>
           <form onSubmit={handleSubmit}>
             <CalendarSelector month={schedule?.month || ''} setSelectedDates={setSelectedDates} />
+            {errors.dates && <p className="text-red-500 text-sm mt-1">{errors.dates}</p>} {/* 날짜 오류 메시지 */}
+
             <LocationSelector selectedLocations={selectedLocations} setSelectedLocations={setSelectedLocations} />
+            {errors.locations && <p className="text-red-500 text-sm mt-1">{errors.locations}</p>} {/* 장소 오류 메시지 */}
+
             <SelectedLocationsList selectedLocations={selectedLocations} setSelectedLocations={setSelectedLocations} />
+
             <div className="flex items-center justify-center mt-10">
               <button
                 className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"
@@ -171,9 +207,9 @@ const InvitedSchedulePage = () => {
           </form>
         </div>
       </div>
-      <div id="map" style={{ width: '100%', height: '0', visibility: 'hidden' }}></div>
     </div>
   );
 };
+
 
 export default InvitedSchedulePage;
