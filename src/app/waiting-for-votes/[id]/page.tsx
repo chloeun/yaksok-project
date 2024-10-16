@@ -27,47 +27,54 @@ const WaitingForVotesPage = () => {
     const checkVotes = async () => {
       setLoading(true);
       const scheduleId = params.id;
-      
+  
       if (scheduleId && session?.user?.id) {
+        // Update the 'last_page' to 'waiting-for-votes'
+        await supabase
+          .from('invitations')
+          .update({ last_page: 'waiting-for-votes' })
+          .eq('schedule_id', scheduleId)
+          .eq('user_id', session.user.id);
+  
         // Fetch participants and organizer (created_by) for the schedule
         const { data: scheduleData, error: scheduleError } = await supabase
           .from('schedules')
           .select('participants, created_by')
           .eq('id', scheduleId)
           .single();
-
+  
         if (scheduleError) {
           console.error('Error fetching schedule participants and organizer:', scheduleError);
           setLoading(false);
           return;
         }
-
+  
         const participantIds = scheduleData?.participants ?? [];
         const organizerId = scheduleData?.created_by;
-        const allParticipants = [...participantIds, organizerId];  // Include organizer in participants check
-
-        // Fetch votes from the votes table
+        const allParticipants = [...participantIds, organizerId]; // Include organizer in participants check
+  
+        // Fetch votes from the coordinate_votes table
         const { data: votes, error: votesError } = await supabase
-          .from('votes')
+          .from('coordinate_votes') // Replace 'votes' with 'coordinate_votes'
           .select('user_id')
           .eq('schedule_id', scheduleId);
-
+  
         if (votesError) {
           console.error('Error fetching votes:', votesError);
           setLoading(false);
           return;
         }
-
+  
         const votedUserIds = votes.map((vote: VoteData) => vote.user_id);
         const pendingUserIds = allParticipants.filter((id: string) => !votedUserIds.includes(id));
-
+  
         // If there are any pending votes, mark users who haven't voted yet
         if (pendingUserIds.length > 0) {
           const { data: pendingUsernames, error: pendingUsersError } = await supabase
             .from('users')
             .select('username')
             .in('id', pendingUserIds);
-          
+  
           if (pendingUsersError) {
             console.error('Error fetching pending users:', pendingUsersError);
           } else if (pendingUsernames) {
@@ -78,13 +85,14 @@ const WaitingForVotesPage = () => {
           // All participants and the organizer have voted
           setAllVoted(true);
         }
-
+  
         setLoading(false);
       }
     };
-
+  
     checkVotes();
   }, [params.id, session?.user?.id]);
+  
 
   useEffect(() => {
     if (!loading && allVoted) {

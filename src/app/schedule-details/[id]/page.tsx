@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useParams } from 'next/navigation'; // URL 파라미터 및 검색 매개변수 가져오기
+import { useSearchParams, useParams, useRouter } from 'next/navigation'; // URL 파라미터 및 검색 매개변수 가져오기
 import { useSession } from 'next-auth/react'; // useSession 가져오기
 import { supabase } from '@/lib/supabaseClient'; // Supabase 클라이언트
 import ScheduleCard from '../_component/ScheduleCard'; // 일정 카드 컴포넌트
@@ -10,16 +10,14 @@ import TabMenu from '../_component/TabMenu'; // 탭 메뉴 컴포넌트
 const ScheduleDetailsPage = () => {
   const { data: session } = useSession(); // NextAuth로부터 사용자 세션을 가져옴
   const userId = session?.user?.id || null; // 세션에서 사용자 ID를 가져옴, 없을 시 null 처리
-
   const params = useParams(); // URL의 일정 ID를 가져옴
+  const router = useRouter();
   const scheduleId = Array.isArray(params.id) ? params.id[0] : params.id; // Ensure scheduleId is a string
 
   // 선택된 탭 상태 (장소, 날짜 등)
   const [selectedTab, setSelectedTab] = useState<string>('장소');
-
-  // 일정 제목 및 참가자들의 이름을 상태로 관리
-  const [scheduleTitle, setScheduleTitle] = useState<string>('');
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [scheduleTitle, setScheduleTitle] = useState<string>(''); // 일정 제목 상태
+  const [participants, setParticipants] = useState<string[]>([]); // 참가자 이름들 상태
 
   // URL에서 검색 매개변수 (final_date, final_location)를 가져옴
   const searchParams = useSearchParams();
@@ -27,7 +25,7 @@ const ScheduleDetailsPage = () => {
   const finalLocationParam = searchParams.get('final_location');
   const finalLocation = finalLocationParam ? JSON.parse(decodeURIComponent(finalLocationParam)) : null;
 
-  // 컴포넌트가 처음 렌더링될 때 일정 정보와 참가자 정보를 가져오는 함수 실행
+  // Fetch schedule and participants
   useEffect(() => {
     const fetchScheduleData = async () => {
       if (!scheduleId) return;
@@ -72,10 +70,17 @@ const ScheduleDetailsPage = () => {
 
       const participantNames = userData.map((user: { name: string }) => user.name); // 참가자 이름 배열 생성
       setParticipants(participantNames); // 참가자 이름 상태 업데이트
+
+      // Update last_page to 'schedule-details'
+      await supabase
+        .from('invitations')
+        .update({ last_page: 'schedule-details' })
+        .eq('schedule_id', scheduleId)
+        .eq('user_id', session?.user?.id);
     };
 
-    fetchScheduleData(); // 일정 정보와 참가자 정보를 가져오는 함수 호출
-  }, [scheduleId]);
+    fetchScheduleData();
+  }, [scheduleId, session]);
 
   // 탭 변경 시 상태 업데이트
   const handleTabChange = (tab: string) => {

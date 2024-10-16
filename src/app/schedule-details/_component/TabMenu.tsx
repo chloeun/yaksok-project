@@ -36,10 +36,10 @@ const TabMenu = ({ selectedTab, handleTabChange, finalLocation, userId, schedule
         </button>
       </div>
 
-      {/* Pass scheduleId to LocationTab */}
+      {/* Pass scheduleId and userId to LocationTab, HeartTab, and VoteTab */}
       {selectedTab === '장소' && <LocationTab finalLocation={finalLocation} userId={userId} scheduleId={scheduleId} />}
-      {selectedTab === '하트' && <HeartTab userId={userId} scheduleId={scheduleId}/>}
-      {selectedTab === '투표' && <VoteTab />}
+      {selectedTab === '하트' && <HeartTab userId={userId} scheduleId={scheduleId} />}
+      {selectedTab === '투표' && <VoteTab userId={userId} scheduleId={scheduleId} />} {/* Pass userId and scheduleId */}
     </div>
   );
 };

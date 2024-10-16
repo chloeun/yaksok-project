@@ -14,10 +14,12 @@ declare namespace naver.maps {
     latlng: naver.maps.LatLng;
     distance?: number; // Optional distance property to store the calculated distance
   }
-  
+
+  // Modify the LatLng interface
   interface LatLng {
-    lat: number;
-    lng: number;
+    lat(): number;  // Change from property to method
+    lng(): number;  // Change from property to method
+    distanceTo(other: LatLng): number;
   }
 
   interface MapOptions {

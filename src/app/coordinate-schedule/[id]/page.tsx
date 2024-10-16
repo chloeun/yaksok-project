@@ -62,6 +62,13 @@ const CoordinateSchedulePage = () => {
           setResponses(responsesData);
           calculateBestOptions(responsesData);
         }
+
+        // Update the 'last_page' to 'coordinate-schedule' for the user
+        await supabase
+          .from('invitations')
+          .update({ last_page: 'coordinate-schedule' })
+          .eq('schedule_id', scheduleId)
+          .eq('user_id', session.user.id);
       }
     };
 
@@ -99,13 +106,13 @@ const CoordinateSchedulePage = () => {
     setBestLocationOptions(filteredBestLocations);
   };
 
-  const calculateFinalDecision = (votes: { voted_date: string; voted_location: { title: string; roadAddress: string } }[]) => {
+  const calculateFinalDecision = (votes: { voted_date: string; voted_station: { title: string; roadAddress: string } }[]) => {
     const dateCounts: { [key: string]: number } = {};
     const locationCounts: { [key: string]: number } = {};
 
     votes.forEach((vote) => {
       dateCounts[vote.voted_date] = (dateCounts[vote.voted_date] || 0) + 1;
-      const locationKey = `${vote.voted_location.title}:${vote.voted_location.roadAddress}`;
+      const locationKey = `${vote.voted_station.title}:${vote.voted_station.roadAddress}`;
       locationCounts[locationKey] = (locationCounts[locationKey] || 0) + 1;
     });
 
@@ -121,12 +128,12 @@ const CoordinateSchedulePage = () => {
     e.preventDefault();
     if (userVoteDate && userVoteLocation) {
       const { error: voteError } = await supabase
-        .from('votes')
+        .from('coordinate_votes') // Use 'coordinate_votes' table for the voting
         .insert({
           schedule_id: params.id,
           user_id: session?.user?.id,
           voted_date: userVoteDate,
-          voted_location: userVoteLocation,
+          voted_station: userVoteLocation, // Use 'voted_station' here
         });
 
       if (voteError) {
@@ -150,8 +157,8 @@ const CoordinateSchedulePage = () => {
       const allParticipants = [...participantIds, organizerId];
 
       const { data: votes, error: votesError } = await supabase
-        .from('votes')
-        .select('voted_date, voted_location')
+        .from('coordinate_votes') // Use 'coordinate_votes' table
+        .select('voted_date, voted_station') // Fetch 'voted_station'
         .eq('schedule_id', params.id);
 
       if (votesError) {

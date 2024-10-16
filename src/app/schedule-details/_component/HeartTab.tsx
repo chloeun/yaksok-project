@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import LocationCard from './LocationCard'; // LocationCard 컴포넌트 임포트
+import LocationCard from './LocationCard';
 
 interface HeartedLocation {
   name: string;
@@ -18,7 +18,7 @@ interface HeartTabProps {
 const HeartTab = ({ userId, scheduleId }: HeartTabProps) => {
   const [heartedLocations, setHeartedLocations] = useState<HeartedLocation[]>([]);
   const [map, setMap] = useState<naver.maps.Map | null>(null);
-  const markersRef = useRef<naver.maps.Marker[]>([]); // useRef로 마커 관리
+  const markersRef = useRef<naver.maps.Marker[]>([]);  // useRef로 마커 리스트 관리
 
   // 하트된 장소 목록을 가져오는 함수
   useEffect(() => {
@@ -76,8 +76,74 @@ const HeartTab = ({ userId, scheduleId }: HeartTabProps) => {
     }
 
     return () => {
-      markersRef.current.forEach((marker) => marker.setMap(null)); // 컴포넌트 해제 시 마커 제거
+      markersRef.current.forEach((marker) => marker.setMap(null));  // 컴포넌트 해제 시 마커 제거
     };
+  }, [map, heartedLocations]);
+
+  const geocodeAddress = (address: string) => {
+    return new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+      naver.maps.Service.geocode({ query: address }, (status, response) => {
+        if (status === naver.maps.Service.Status.OK) {
+          const { y, x } = response.v2.addresses[0];
+          resolve({ lat: parseFloat(y), lng: parseFloat(x) });
+        } else {
+          reject(new Error('좌표 변환 실패'));
+        }
+      });
+    });
+  };
+
+  // 마커 추가 및 삭제
+  useEffect(() => {
+    if (map && heartedLocations.length > 0) {
+      markersRef.current.forEach((marker) => marker.setMap(null));  // 기존 마커 제거
+      markersRef.current = [];  // 마커 배열 초기화
+
+      const markerPositions: naver.maps.LatLng[] = [];
+
+      heartedLocations.forEach(async (location, index) => {
+        if (!location.latlng) {
+          try {
+            const coords = await geocodeAddress(location.address);
+            location.latlng = new naver.maps.LatLng(coords.lat, coords.lng);
+
+            setHeartedLocations((prevLocations) => {
+              const updatedLocations = [...prevLocations];
+              updatedLocations[index].latlng = location.latlng;
+              return updatedLocations;
+            });
+          } catch (error) {
+            console.error('Error converting address to coordinates:', error);
+          }
+        }
+
+        if (location.latlng) {
+          const marker = new naver.maps.Marker({
+            position: location.latlng,
+            map: map!,
+            title: location.name,
+          });
+
+          marker.addListener('click', () => {
+            const infoWindow = new naver.maps.InfoWindow({
+              content: `<div style="padding:10px;">${location.name}</div>`,
+            });
+            infoWindow.open(map, marker);
+          });
+
+          markersRef.current.push(marker);  // 마커를 ref로 관리
+          markerPositions.push(location.latlng);
+        }
+      });
+
+      if (markerPositions.length > 0) {
+        const bounds = new naver.maps.LatLngBounds(markerPositions[0], markerPositions[0]);
+        markerPositions.forEach((latlng) => {
+          bounds.extend(latlng);
+        });
+        map.fitBounds(bounds);  // 경계 내에서 지도 맞추기
+      }
+    }
   }, [map, heartedLocations]);
 
   // 하트를 토글하여 장소를 삭제하는 함수
@@ -111,52 +177,14 @@ const HeartTab = ({ userId, scheduleId }: HeartTabProps) => {
     }
   };
 
-  // 마커를 추가하고 지도에 반영하는 함수
-  useEffect(() => {
-    if (map && heartedLocations.length > 0) {
-      markersRef.current.forEach((marker) => marker.setMap(null)); // 기존 마커 제거
-      markersRef.current = []; // 마커 배열 초기화
-
-      const markerPositions: naver.maps.LatLng[] = [];
-
-      heartedLocations.forEach((location) => {
-        if (location.latlng) {
-          const marker = new naver.maps.Marker({
-            position: location.latlng,
-            map: map!,
-            title: location.name,
-          });
-
-          marker.addListener('click', () => {
-            const infoWindow = new naver.maps.InfoWindow({
-              content: `<div style="padding:10px;">${location.name}</div>`,
-            });
-            infoWindow.open(map, marker);
-          });
-
-          markersRef.current.push(marker);
-          markerPositions.push(location.latlng);
-        }
-      });
-
-      if (markerPositions.length > 0) {
-        const bounds = new naver.maps.LatLngBounds(markerPositions[0], markerPositions[0]);
-        markerPositions.forEach((latlng) => {
-          bounds.extend(latlng);
-        });
-        map.fitBounds(bounds); // 마커들이 있는 범위로 지도를 맞춤
-      }
-    }
-  }, [map, heartedLocations]);
-
   return (
     <div>
       {heartedLocations.length > 0 ? (
         <>
-          <h2 className="text-xl mb-6 font-gangwonEdu tracking-[0.10em] text-center text-gray-800">
-            저장한 장소를 확인하세요!
-          </h2>
+          <h2 className="text-xl mb-6 font-gangwonEdu tracking-[0.10em] text-center text-gray-800">저장한 장소를 확인하세요!</h2>
+          
           <div id="map" className="w-full h-96 border-2 border-gray-300 rounded-lg mb-4"></div> {/* 지도 */}
+          
           <ul className="mt-4 space-y-2">
             {heartedLocations.map((location, index) => (
               <LocationCard
@@ -165,16 +193,14 @@ const HeartTab = ({ userId, scheduleId }: HeartTabProps) => {
                 address={location.address}
                 latlng={location.latlng || new naver.maps.LatLng(0, 0)}
                 isSelected={true}
-                onToggleHeart={() => toggleHeart(location)} // 하트 토글 함수
+                onToggleHeart={() => toggleHeart(location)}  // 하트 토글 함수
                 onFocusPlace={() => map?.setCenter(location.latlng || new naver.maps.LatLng(0, 0))}
               />
             ))}
           </ul>
         </>
       ) : (
-        <p className="text-xl mb-6 font-gangwonEdu tracking-[0.10em] text-center text-gray-800">
-          저장한 장소가 없습니다.
-        </p>
+        <p className="text-xl mb-6 font-gangwonEdu tracking-[0.10em] text-center text-gray-800">저장한 장소가 없습니다.</p>
       )}
     </div>
   );

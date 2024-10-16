@@ -47,7 +47,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="w-full md:bg-white shadow-md p-4 flex justify-between items-center fixed top-10 md:top-0 z-100">
+    <nav className="w-full md:bg-white shadow-md p-4 flex justify-between items-center fixed top-10 md:top-0 z-50">
       {/* 네비게이션의 로고 영역 */}
       <div className="flex items-center">
         {/* YAKSOK 타이틀 (로고) */}
