@@ -72,9 +72,12 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
       return;
     }
 
-    const votedUserIds = votes.map((vote: { user_id: string }) => vote.user_id);
-    if (votedUserIds.length === totalParticipants) {
-      calculateFinalPlace(); // Trigger calculation if all have voted
+    // 유저 ID를 중복 없이 추출해서 몇 명의 유저가 투표했는지 확인
+    const uniqueVotedUserIds = Array.from(new Set(votes.map((vote: { user_id: string }) => vote.user_id)));
+
+    // 실제 투표한 유저 수가 전체 참가자 수와 동일할 때만 최종 계산을 진행
+    if (uniqueVotedUserIds.length === totalParticipants) {
+      calculateFinalPlace(); // Trigger calculation if all unique users have voted
     }
   }, [scheduleId, totalParticipants, calculateFinalPlace]);
 
@@ -198,8 +201,8 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
       alert('투표가 아직 시작되지 않았습니다.');
       return;
     }
-    if (selectedLocations.length === 0) {
-      alert('최소 한 개 이상의 장소를 선택해주세요.');
+    if (selectedLocations.length === 0 || selectedLocations.length > 2) {
+      alert('최소 한 개 이상의 장소를 선택하고, 최대 두 개까지 선택할 수 있습니다.');
       return;
     }
 
@@ -233,9 +236,9 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
   // Check if all participants have voted after each vote
   useEffect(() => {
     if (votesCount === totalParticipants && votingStarted) {
-      calculateFinalPlace();
+      checkIfAllVoted(); // All votes should be checked
     }
-  }, [votesCount, totalParticipants, votingStarted, calculateFinalPlace]);
+  }, [votesCount, totalParticipants, votingStarted, checkIfAllVoted]);
 
   return (
     <div>
@@ -249,7 +252,7 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
         <>
           {!userHasVoted ? (
             <>
-              <h2 className="text-xl mb-6">장소를 선택해주세요 (최대 3곳)</h2>
+              <h2 className="text-xl mb-6">장소를 선택해주세요 (최대 2곳)</h2>
               <div className="space-y-4">
                 {heartedLocations.map((location, index) => (
                   <button
