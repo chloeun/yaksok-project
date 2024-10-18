@@ -3,13 +3,12 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import Navbar from '@/components/Navbar';
 import Image from 'next/image'; 
 import YaksokLogo from '@/assets/images/YaksokLogo.png';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import InvitationBox from './_component/InvitationBox';
-import InProgressBox from './_component/InProgressBox'; // New component for in-progress schedules
-import ReminderBox from './_component/ReminderBox';
+import InProgressBox from './_component/InProgressBox'; // Component for in-progress schedules
+import ReminderBox from './_component/ReminderBox'; // Dynamic ReminderBox
 
 interface User {
   name: string;
@@ -23,6 +22,8 @@ interface Schedule {
   locations: Array<{ title: string; roadAddress: string }>;
   created_by: string;
   users: User[];
+  final_date: string | null;
+  final_place: { title: string; address: string } | null;
 }
 
 interface Invitation {
@@ -37,6 +38,7 @@ const MainPage = () => {
   const { data: session, status } = useSession();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [inProgress, setInProgress] = useState<Invitation[]>([]); // Schedules in progress
+  const [reminderSchedules, setReminderSchedules] = useState<Schedule[]>([]); // Finalized schedules for reminders
   const router = useRouter();
 
   useEffect(() => {
@@ -62,7 +64,9 @@ const MainPage = () => {
               dates,
               locations,
               created_by,
-              users (name)
+              users (name),
+              final_date,
+              final_place
             )
           `)
           .eq('user_id', session.user.id);
@@ -70,8 +74,15 @@ const MainPage = () => {
         if (error) {
           console.error('Error fetching invitations:', error);
         } else {
+          // Separate invitations based on status
           setInvitations(data.filter((inv: any) => inv.status === 'pending'));
           setInProgress(data.filter((inv: any) => inv.status === 'accepted'));
+
+          // Filter for finalized schedules where `final_place` is set
+          const finalizedSchedules = data
+            .filter((inv: any) => inv.schedules.final_place) // Only schedules with final_place
+            .map((inv: any) => inv.schedules); // Extract the schedule object
+          setReminderSchedules(finalizedSchedules);
         }
       }
     };
@@ -135,7 +146,6 @@ const MainPage = () => {
 
   return ( 
     <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
-      {/* <Navbar /> */}
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl lg:max-w-3xl">
         <div className="ml-2 flex items-center justify-left md:justify-start my-4 md:mb-6 lg:mb-8">
           <Image 
@@ -189,8 +199,20 @@ const MainPage = () => {
         <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
           다가오는 약속:
         </h2>
-        <ReminderBox />
-
+        {reminderSchedules.length > 0 ? (
+          reminderSchedules.map(schedule => (
+            <div key={schedule.id} className="mb-4">
+              <ReminderBox 
+                title={schedule.plan_name}
+                date={schedule.final_date || '날짜 미정'}
+                location={schedule.final_place?.title || '장소 미정'}
+                participants={(Array.isArray(schedule.users) ? schedule.users : []).map(user => user.name).join(', ')} // users 배열인지 확인 후 처리
+              />
+            </div>
+          ))
+        ) : (
+          <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">다가오는 약속이 없습니다.</p>
+        )}
         <button 
           onClick={handleCreateSchedule}
           className="bg-buttonA hover:bg-secondaryHover min-w-[320px] tracking-[0.30em] mt-3 w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[8px] md:py-[12px] lg:py-[14px] px-14 md:px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis">
