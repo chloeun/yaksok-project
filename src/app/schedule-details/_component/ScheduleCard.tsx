@@ -22,7 +22,7 @@ const ScheduleCard = ({ title, date, time, location, participants }: ScheduleCar
       <h3 className="text-[22px] md:text-[24px] lg:text-[26px] font-semibold mb-2 ml-1 text-textMain tracking-[0.20em] overflow-hidden text-ellipsis whitespace-nowrap">
         {title}  {/* 일정 제목 */}
       </h3>
-      <hr className="border-t border-gray-300 my-4 w-10/12" />
+      <hr className="border-t border-gray-300 my-4 w-full" />
       {/* <Image
         src={BirthdayTheme}
         alt="Birthday Theme Icon"  // 대체 텍스트
@@ -34,8 +34,8 @@ const ScheduleCard = ({ title, date, time, location, participants }: ScheduleCar
         <GoClock className="mr-2 md:mr-3" />  {/* 시계 아이콘 */}
         <p className="overflow-hidden text-ellipsis whitespace-nowrap">
           <span>{date}</span>  {/* 일정 날짜 */}
-          <span className="mx-4">|</span>
-          <span className="mx-2 text-red-500">{time || '시간 입력'}</span>  {/* 일정 시간 */}
+          {/* <span className="mx-4">|</span> */}
+          {/* <span className="mx-2 text-red-500">{time || '시간 입력'}</span>  일정 시간 */}
         </p>
       </div>
       <div className="flex items-center text-[18px] md:text-[22px] lg:text-[24px] text-gray-600 mb-3">

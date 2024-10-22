@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import dayjs from 'dayjs';
+import { FaCalendarAlt } from 'react-icons/fa'; // Import schedule icon
 
 const FinalSchedulePage = () => {
   const { data: session, status } = useSession();
@@ -34,7 +35,6 @@ const FinalSchedulePage = () => {
           setSchedule(data);
         }
 
-        // Fetch the current last_page before updating
         const { data: currentInvitation } = await supabase
           .from('invitations')
           .select('last_page')
@@ -42,7 +42,6 @@ const FinalSchedulePage = () => {
           .eq('user_id', session?.user?.id)
           .single();
 
-        // Only update if last_page is not already 'final-schedule'
         if (currentInvitation?.last_page !== 'final-schedule') {
           await supabase
             .from('invitations')
@@ -69,33 +68,45 @@ const FinalSchedulePage = () => {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-[#F5F5F5] pt-16 md:pt-24">
-      <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-lg lg:max-w-xl">
-        <div className="text-center p-4">
-          <h1 className="text-[22px] md:text-[30px] font-bold text-[#333] font-pretendard tracking-[0.3em] mb-2">
-            최종 약속
-          </h1>
-          <h2 className="text-[14px] md:text-[16px] font-extrabold text-[#666] font-deliusRegular tracking-[0.3em]">
-            Final Schedule
-          </h2>
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 px-4">
+      {/* Title Section */}
+      <div className="text-center mb-6">
+        <h1 className="text-[24px] md:text-[34px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-3">
+          약속 일정
+        </h1>
+        <h2 className="text-[16px] md:text-[20px] font-extrabold text-textMain font-deliusRegular tracking-[0.35em]">
+          Coordinated Schedule
+        </h2>
+      </div>
+
+      {/* White Box Section */}
+      <div className="w-full max-w-screen-sm bg-white rounded-lg shadow-lg p-8 md:p-10 lg:p-12 space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-[20px] md:text-[26px] font-semibold text-gray-800">
+            날짜:
+          </h3>
+          <p className="text-[22px] md:text-[28px] text-gray-600 font-gangwonEdu ml-2">
+            {dayjs(schedule.final_date).format('YYYY년 M월 D일')}
+          </p>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-lg md:p-8 mt-6">
-          <div className="text-center mb-6">
-            <h1 className="text-[22px] md:text-[28px] font-semibold text-[#333] font-gangwonEdu tracking-[0.3em]">
-              {`날짜: ${dayjs(schedule.final_date).format('YYYY년 M월 D일')}`}
-            </h1>
-          </div>
-          <div className="text-center mb-6">
-            <h1 className="text-[22px] md:text-[28px] font-semibold text-[#333] font-gangwonEdu tracking-[0.3em]">
-              {`장소: ${schedule.final_location?.title}`}
-            </h1>
-          </div>
+        <div className="flex justify-between items-center">
+          <h3 className="text-[20px] md:text-[26px] font-semibold text-gray-800">
+            지하철역:
+          </h3>
+          <p className="text-[22px] md:text-[28px] text-gray-600 font-gangwonEdu ml-2">
+            {schedule.final_location?.title || '장소 없음'}
+          </p>
         </div>
+      </div>
+
+      {/* Button Section */}
+      <div className="flex justify-center mt-6 w-full max-w-screen-sm">
         <button
-          className="mt-6 py-2 px-4 bg-blue-500 text-white rounded-lg"
+          className="bg-buttonA hover:bg-secondaryHover text-textButton tracking-[0.30em] w-full text-lg md:text-xl lg:text-2xl font-semibold py-[10px] md:py-[12px] lg:py-[14px] rounded-lg shadow-lg flex items-center justify-center"
           onClick={handleGoToDetails}
         >
-          약속 상세 페이지로 이동
+          <FaCalendarAlt className="mr-3 w-5" /> {/* Schedule Icon */}
+          약속 상세 페이지
         </button>
       </div>
     </div>
