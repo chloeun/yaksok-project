@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
-import Navbar from '@/components/Navbar';
+import { FaHome } from 'react-icons/fa'; // Import home icon
 
 interface ResponseData {
   user_id: string;
@@ -108,45 +108,57 @@ const WaitingForResponsesPage = () => {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
-      {/* <Navbar /> */}
-      <div className="md:text-center p-2 md:p-4">
-        <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-2 md:mb-3">
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 px-4"> 
+      
+      {/* Title Section with smooth loading bar */}
+      <div className="text-center mb-5">
+        <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.35em] mb-2 text-center">
           대기 중
         </h1>
-        <h2 className="text-[14px] md:text-[16px] font-extrabold text-textMain font-deliusRegular tracking-[0.35em]">
+        <h2 className="text-[14px] md:text-[16px] font-extrabold text-textMain font-deliusRegular tracking-[0.35em] text-center">
           Waiting for Responses
         </h2>
+        <div className="flex justify-center mb-4 w-full max-w-md">
+          {/* Smooth Loading Bar */}
+          <div className="mt-7 w-full h-2 bg-blockGray rounded-full overflow-hidden">
+            <div className="h-full bg-gray-600 animate-smoothLoading"></div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl bg-white rounded-xl shadow-lg mt-4 md:p-10">
-        <div className="text-center p-4">
-          <p className="mt-4 text-[14px] md:text-[16px] font-medium text-textMain">
-            아직 모든 참여자가 답변을 제출하지 않았습니다. 답변이 완료될 때까지 기다려 주세요.
-          </p>
-        </div>
-        <div className="mt-6">
-          <h3 className="text-[16px] md:text-[20px] font-semibold text-textMain">
+      {/* White Box Section */}
+      <div className="w-full max-w-screen-sm bg-white rounded-lg shadow-lg p-8 md:p-10 lg:p-12 space-y-4">
+        <p className="text-[14px] md:text-[16px] text-gray-700 text-center mb-10">
+          아직 모든 참여자가 답변을 제출하지 않았습니다.<br />
+          답변이 완료될 때까지 기다려 주세요.
+        </p>
+        <div>
+          <h3 className="text-[16px] md:text-[18px] font-semibold text-gray-800 mb-2 text-left"> 
             대기 중인 사용자:
           </h3>
-          <ul className="list-disc list-inside text-[14px] md:text-[16px] text-textMain mt-2">
+          <ul className="list-disc list-inside text-[14px] md:text-[16px] text-gray-700 text-left"> 
             {pendingUsers.length > 0 ? (
               pendingUsers.map((username) => (
                 <li key={username}>{username}</li>
               ))
             ) : (
-              <p className="text-[14px] md:text-[16px] text-textMain">모든 참가자가 답변을 제출했습니다!</p>
+              <p className="text-[14px] md:text-[16px] text-gray-700">
+                모든 참가자가 답변을 제출했습니다!
+              </p>
             )}
           </ul>
         </div>
-        <div className="flex justify-center mt-6">
-          <button
-            className="bg-[#838380] text-white hover:bg-buttonA hover:text-textButton tracking-[0.30em] w-full text-lg font-semibold py-[10px] px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg"
-            onClick={() => router.push('/main')}
-          >
-            메인 페이지로 돌아가기
-          </button>
-        </div>
+      </div>
+
+      {/* Button Section with home icon */}
+      <div className="flex justify-center mt-6 w-full max-w-screen-sm"> 
+        <button
+          className="bg-buttonA hover:bg-secondaryHover text-textButton tracking-[0.30em] w-full text-lg md:text-xl lg:text-2xl font-semibold py-[10px] md:py-[12px] lg:py-[14px] rounded-lg shadow-lg flex items-center justify-center"
+          onClick={() => router.push('/main')}
+        >
+          <FaHome className="mr-3 w-5" /> {/* Home Icon */}
+          메인 페이지로 돌아가기
+        </button>
       </div>
     </div>
   );

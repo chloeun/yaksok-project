@@ -88,12 +88,12 @@ const ScheduleDetailsPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-[#FAFAF5] pt-24 md:pt-16">
-      <div className="text-center p-4">
-        <h1 className="text-[22px] md:text-[30px] font-bold text-[#333] font-pretendard tracking-[0.2em] mb-2">
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 px-4">
+      <div className="text-center p-4 mb-4">
+        <h1 className="text-[22px] md:text-[30px] font-bold text-textMain font-pretendard tracking-[0.2em] mb-2">
           약속 장소 정하기
         </h1>
-        <h2 className="text-[14px] md:text-[16px] font-extrabold text-[#666] font-deliusRegular tracking-[0.3em]">
+        <h2 className="text-[14px] md:text-[16px] font-extrabold text-textMain font-deliusRegular tracking-[0.3em]">
           Make Decisions
         </h2>
       </div>

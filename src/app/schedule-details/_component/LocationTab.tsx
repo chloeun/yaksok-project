@@ -285,7 +285,7 @@ const LocationTab = ({ finalLocation, userId, scheduleId }: LocationTabProps) =>
   return (
     <div>
       <h2 className="text-xl mb-6 font-gangwonEdu tracking-[0.10em] text-center text-gray-800">
-        만나고 싶은 장소를 검색하세요! (역 800m 이내)
+        만나고 싶은 장소를 검색하세요!
       </h2>
 
       <div className="flex items-center mb-4">

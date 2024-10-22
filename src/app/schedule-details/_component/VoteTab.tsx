@@ -72,12 +72,10 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
       return;
     }
 
-    // 유저 ID를 중복 없이 추출해서 몇 명의 유저가 투표했는지 확인
     const uniqueVotedUserIds = Array.from(new Set(votes.map((vote: { user_id: string }) => vote.user_id)));
 
-    // 실제 투표한 유저 수가 전체 참가자 수와 동일할 때만 최종 계산을 진행
     if (uniqueVotedUserIds.length === totalParticipants) {
-      calculateFinalPlace(); // Trigger calculation if all unique users have voted
+      calculateFinalPlace();
     }
   }, [scheduleId, totalParticipants, calculateFinalPlace]);
 
@@ -102,10 +100,10 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
 
       setIsOrganizer(data.created_by === userId); // Is the user the organizer?
       setVotingStarted(data.voting_started); // Has voting started?
-      setTotalParticipants(participants.length); // Set total participants
+      setTotalParticipants(participants.length);
 
       if (data.final_place) {
-        setFinalPlace(data.final_place); // Set final place if already decided
+        setFinalPlace(data.final_place);
       }
     };
 
@@ -124,7 +122,7 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
         console.error('Error fetching hearted locations:', error);
         return;
       }
-      setHeartedLocations(data.map((entry: any) => entry.location)); // Set hearted locations
+      setHeartedLocations(data.map((entry: any) => entry.location));
     };
 
     fetchHeartedLocations();
@@ -143,7 +141,7 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
         console.error('Error checking user vote status:', error);
         return;
       }
-      setUserHasVoted(data.length > 0); // Set voting status for the user
+      setUserHasVoted(data.length > 0);
     };
 
     checkUserVoteStatus();
@@ -154,11 +152,10 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
     const votesListener = supabase
       .channel(`public:final_place_votes:schedule_id=eq.${scheduleId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'final_place_votes' }, () => {
-        setVotesCount((prevCount) => prevCount + 1); // Increment votes count when new votes are inserted
+        setVotesCount((prevCount) => prevCount + 1);
       })
       .subscribe();
 
-    // Clean up subscription when component unmounts
     return () => {
       supabase.removeChannel(votesListener);
     };
@@ -222,30 +219,31 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
         console.error('Failed to submit votes:', error);
         return;
       }
-      setSelectedLocations([]); // Clear selected locations
+      setSelectedLocations([]);
       setUserHasVoted(true);
       alert('투표가 완료되었습니다.');
 
-      // Check if all participants have voted after submitting the vote
       checkIfAllVoted();
     } catch (error) {
       console.error('Error submitting votes:', error);
     }
   };
 
-  // Check if all participants have voted after each vote
   useEffect(() => {
     if (votesCount === totalParticipants && votingStarted) {
-      checkIfAllVoted(); // All votes should be checked
+      checkIfAllVoted();
     }
   }, [votesCount, totalParticipants, votingStarted, checkIfAllVoted]);
 
   return (
     <div>
       {isOrganizer && !votingStarted && (
-        <button className="w-full bg-green-500 text-white py-2 px-4 mb-4 rounded-lg" onClick={startVoting}>
-          투표 시작
-        </button>
+        <>
+          <p className="text-lg mb-10 text-center ">투표할 준비가 완료되면 아래 버튼을 눌러주세요!</p>
+          <button className="text-lg w-full bg-buttonA font-semibold hover:bg-secondaryHover text-textButton py-2 px-4 mb-4 rounded-lg shadow-lg tracking-[0.30em]" onClick={startVoting}>
+            투표 시작
+          </button>
+        </>
       )}
 
       {votingStarted && !finalPlace ? (
@@ -258,7 +256,7 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
                   <button
                     key={index}
                     className={`w-full py-2 px-4 rounded-lg ${
-                      selectedLocations.some((selected) => selected.name === location.name) ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
+                      selectedLocations.some((selected) => selected.name === location.name) ? 'bg-textButton text-white' : 'bg-buttonA text-textButton'
                     }`}
                     onClick={() => toggleLocationSelection(location)}
                   >
@@ -267,16 +265,16 @@ const VoteTab = ({ userId, scheduleId }: VoteTabProps) => {
                 ))}
               </div>
 
-              <button className="w-full bg-blue-500 text-white py-2 px-4 mt-4 rounded-lg" onClick={submitVotes}>
+              <button className="w-full bg-textButton text-white py-2 px-4 mt-4 rounded-lg" onClick={submitVotes}>
                 투표 완료
               </button>
             </>
           ) : (
-            <p className="text-xl mt-6">다른 참가자들의 투표를 기다려주세요.</p>
+            <p className="text-xl mt-6 text-center">다른 참가자들의 투표를 기다려주세요.</p>
           )}
         </>
       ) : (
-        finalPlace && <p className="text-xl mt-6">최종 장소: {finalPlace.name}</p>
+        finalPlace && <p className="text-xl mt-6 text-center">최종 장소: {finalPlace.name}</p>
       )}
     </div>
   );

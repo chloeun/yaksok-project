@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 약속 - 약속 일정 관리 웹 애플리케이션
 
-## Getting Started
+**약속(Yaksok)**은 친구나 가족과의 약속을 쉽게 잡고, 일정을 조율할 수 있도록 도와주는 웹 애플리케이션입니다. 사용자는 날짜와 장소를 선택하고, 투표 과정을 통해 최종 결정을 내리며, 모든 과정이 하나의 플랫폼에서 관리됩니다.
 
-First, run the development server:
+## 주요 기능
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. **사용자 인증**:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   - NextAuth를 사용하여 로그인 및 회원가입 기능을 구현.
+   - Supabase를 통해 사용자 데이터를 관리하고 실시간 업데이트를 제공합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. **일정 생성**:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+   - 주최자는 새로운 일정을 생성하고, 모임이 가능한 대략적인 월을 선택한 후 참가자들을 초대할 수 있습니다.
+   - 참가자들은 자신이 가능한 날짜와 지하철역 위치를 선택하여 답변을 제출할 수 있습니다.
 
-## Learn More
+3. **투표 시스템**:
 
-To learn more about Next.js, take a look at the following resources:
+   - 참가자들의 답변이 모두 모이면 가장 겹치는 날짜와 위치에 대해 투표가 시작됩니다.
+   - 참가자들은 지하철역 주변의 장소를 저장(하트)하고, 최종 장소 투표에 반영할 수 있습니다.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **투표 과정**:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+   - **1단계**: 일정 조율 – 가장 겹치는 날짜와 지하철역을 선택.
+   - **2단계**: 최종 장소 투표 – 참가자들이 1~2개의 최종 장소(예: 카페나 레스토랑)를 선택.
 
-## Deploy on Vercel
+5. **실시간 업데이트**:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   - Supabase를 사용하여 참가자들이 제출한 답변 및 투표 결과가 실시간으로 반영됩니다.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+6. **반응형 UI**:
+
+   - 모바일에서도 사용이 편리하도록 반응형 레이아웃을 적용하여 다양한 기기에서 일관된 사용자 경험을 제공합니다.
+
+7. **최종 일정 페이지**:
+
+   - 모든 투표가 완료되면 최종 확정된 날짜와 장소가 표시됩니다.
+   - 사용자는 약속 상세 페이지로 이동해 더 많은 정보를 확인할 수 있습니다.
+
+8. **메인 페이지 개요**:
+   - 사용자는 초대받은 약속, 진행 중인 약속, 다가오는 약속을 한눈에 볼 수 있으며, 쉽게 일정을 관리할 수 있습니다.
+
+## 사용 기술
+
+- **Next.js**: 웹 애플리케이션의 핵심 프레임워크로 사용.
+- **TypeScript**: 코드의 안정성과 유지 보수성을 높이기 위해 사용.
+- **Supabase**: 실시간 데이터 관리 및 사용자 인증을 위한 백엔드 서비스.
+- **Naver Maps API**: 장소 검색 및 지도를 표시하기 위해 통합.
+- **Tailwind CSS**: 반응형, 모바일 친화적인 UI 디자인을 위해 사용.
+- **Framer Motion**: 부드러운 애니메이션과 사용자 상호작용을 위한 라이브러리.
+- **NextAuth**: 안전한 사용자 인증을 제공.
+
+## 프로젝트 구조
+
+- **메인 페이지**: 사용자의 약속 상태(초대받은 약속, 진행 중인 약속, 다가오는 약속)를 한눈에 보여줍니다.
+- **일정 생성 페이지**: 주최자가 새로운 일정을 생성하고 참가자들을 초대할 수 있습니다.
+- **초대받은 일정 페이지**: 참가자가 가능한 날짜와 위치를 선택할 수 있는 페이지입니다.
+- **일정 조율 페이지**: 참가자들의 응답을 수집하고 투표 과정을 시작합니다.
+- **대기 페이지**: 참가자들의 응답 및 투표를 기다리는 동안 상태를 확인할 수 있습니다.
+- **최종 일정 페이지**: 투표가 완료된 후 최종 확정된 일정(날짜와 장소)을 표시합니다.

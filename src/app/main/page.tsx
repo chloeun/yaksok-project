@@ -7,8 +7,8 @@ import Image from 'next/image';
 import YaksokLogo from '@/assets/images/YaksokLogo.png';
 import { IoIosAddCircleOutline } from 'react-icons/io';
 import InvitationBox from './_component/InvitationBox';
-import InProgressBox from './_component/InProgressBox'; // Component for in-progress schedules
-import ReminderBox from './_component/ReminderBox'; // Dynamic ReminderBox
+import InProgressBox from './_component/InProgressBox'; 
+import ReminderBox from './_component/ReminderBox';
 
 interface User {
   name: string;
@@ -21,7 +21,7 @@ interface Schedule {
   dates: string[];
   locations: Array<{ title: string; roadAddress: string }>;
   created_by: string;
-  users: User[];
+  users: User[] | null;
   final_date: string | null;
   final_place: { title: string; address: string } | null;
 }
@@ -29,16 +29,16 @@ interface Schedule {
 interface Invitation {
   id: string;
   schedule_id: string;
-  last_page: string; // Track the last page the user visited
-  schedules: Schedule[]; 
+  last_page: string;
+  schedules: Schedule[];
   status: string;
 }
 
 const MainPage = () => {
   const { data: session, status } = useSession();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [inProgress, setInProgress] = useState<Invitation[]>([]); // Schedules in progress
-  const [reminderSchedules, setReminderSchedules] = useState<Schedule[]>([]); // Finalized schedules for reminders
+  const [inProgress, setInProgress] = useState<Invitation[]>([]);
+  const [reminderSchedules, setReminderSchedules] = useState<Schedule[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -74,14 +74,14 @@ const MainPage = () => {
         if (error) {
           console.error('Error fetching invitations:', error);
         } else {
-          // Separate invitations based on status
           setInvitations(data.filter((inv: any) => inv.status === 'pending'));
           setInProgress(data.filter((inv: any) => inv.status === 'accepted'));
 
-          // Filter for finalized schedules where `final_place` is set
+          // Extract and flatten the schedule array and filter for finalized schedules
           const finalizedSchedules = data
-            .filter((inv: any) => inv.schedules.final_place) // Only schedules with final_place
-            .map((inv: any) => inv.schedules); // Extract the schedule object
+            .flatMap((inv: any) => inv.schedules)
+            .filter((schedule: Schedule) => schedule.final_place);
+          
           setReminderSchedules(finalizedSchedules);
         }
       }
@@ -145,25 +145,25 @@ const MainPage = () => {
   }
 
   return ( 
-    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16 lg:pt-16">
+    <div className="flex flex-col items-center min-h-screen bg-primary pt-24 md:pt-16">
       <div className="flex flex-col p-6 w-full max-w-md mx-auto md:max-w-2xl lg:max-w-3xl">
-        <div className="ml-2 flex items-center justify-left md:justify-start my-4 md:mb-6 lg:mb-8">
+        {/* Header Section */}
+        <div className="flex items-center justify-left md:justify-start my-4 md:mb-6">
           <Image 
             src={YaksokLogo}
             alt="Yaksok Logo"
             layout="fixed"
-            width={40} 
-            height={54} 
+            width={50} 
+            height={65} 
             className="md:w-[60px] md:h-[85px] lg:w-[70px] lg:h-[100px] mr-5" 
           />
-          <h1 className="text-[22px] md:text-[30px] lg:text-[32px] font-bold text-textMain font-deliusRegular tracking-[0.20em] mb-1 overflow-hidden text-ellipsis whitespace-nowrap">
-            <span>안녕하세요! </span>
-            <span className="text-[28px] md:text-[36px] lg:text-[38px] font-bold text-black font-gangwonEdu mr-1">{session.user?.name}</span>
-            <span>님</span>
+          <h1 className="text-[22px] md:text-[28px] lg:text-[32px] font-bold text-textMain font-deliusRegular tracking-[0.20em] mb-1 overflow-hidden text-ellipsis whitespace-nowrap">
+            안녕하세요! <span className="text-[28px] md:text-[36px] lg:text-[38px] font-bold text-black">{session.user?.name}</span>님
           </h1>
         </div>
 
-        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4">
+        {/* Invitations Section */}
+        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] mb-4">
           초대받은 약속:
         </h2>
         {invitations.length > 0 ? (
@@ -177,10 +177,16 @@ const MainPage = () => {
             </div>
           ))
         ) : (
-          <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">초대받은 약속이 없습니다.</p>
+          <p className="text-[#4D4C51]">초대받은 약속이 없습니다.</p>
         )}
 
-        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
+        {/* First decorative dotted divider */}
+        <div className="w-full flex justify-center mt-8">
+          <div className="w-[90%] border-t border-dotted border-gray-400"></div>
+        </div>
+
+        {/* In-Progress Section */}
+        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] mb-4 mt-7">
           조율 진행 중인 약속:
         </h2>
         {inProgress.length > 0 ? (
@@ -193,10 +199,16 @@ const MainPage = () => {
             </div>
           ))
         ) : (
-          <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">진행 중인 약속이 없습니다.</p>
+          <p className="text-[#4D4C51]">진행 중인 약속이 없습니다.</p>
         )}
 
-        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] ml-2 md:ml-3 lg:ml-5 my-4 mt-7">
+        {/* Second decorative dotted divider */}
+        <div className="w-full flex justify-center mt-8">
+          <div className="w-[90%] border-t border-dotted border-gray-400"></div>
+        </div>
+
+        {/* Reminder Section */}
+        <h2 className="text-[17px] md:text-[22px] lg:text-[24px] font-semibold font-pretendard tracking-[0.20em] text-[#4D4C51] mb-4 mt-7">
           다가오는 약속:
         </h2>
         {reminderSchedules.length > 0 ? (
@@ -206,16 +218,18 @@ const MainPage = () => {
                 title={schedule.plan_name}
                 date={schedule.final_date || '날짜 미정'}
                 location={schedule.final_place?.title || '장소 미정'}
-                participants={(Array.isArray(schedule.users) ? schedule.users : []).map(user => user.name).join(', ')} // users 배열인지 확인 후 처리
+                participants={Array.isArray(schedule.users) ? schedule.users.map(user => user.name).join(', ') : '참여자 없음'}
               />
             </div>
           ))
         ) : (
-          <p className="ml-2 md:ml-3 lg:ml-5 text-[#4D4C51]">다가오는 약속이 없습니다.</p>
+          <p className="text-[#4D4C51]">다가오는 약속이 없습니다.</p>
         )}
+
+        {/* Create Schedule Button */}
         <button 
           onClick={handleCreateSchedule}
-          className="bg-buttonA hover:bg-secondaryHover min-w-[320px] tracking-[0.30em] mt-3 w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[8px] md:py-[12px] lg:py-[14px] px-14 md:px-16 rounded-lg focus:outline-none focus:shadow-outline shadow-lg flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis">
+          className="bg-buttonA hover:bg-secondaryHover tracking-[0.30em] mt-10 w-full text-lg md:text-xl lg:text-2xl text-textButton font-semibold py-[10px] md:py-[12px] lg:py-[14px] rounded-lg focus:outline-none shadow-lg flex items-center justify-center">
           <IoIosAddCircleOutline className="mr-2 text-xl md:text-3xl lg:text-4xl" />
           약속 만들기
         </button>
